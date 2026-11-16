@@ -10,13 +10,14 @@
  */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /* One corner shape for the whole site (doc 1.14 / 1.24): buttons and chips ~6-8px, boxes ~10-12px. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 14px;
+  --radius-4xl: 16px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -59,7 +60,7 @@
 :root,
 .dark,
 [data-theme] {
-  --radius: 0.875rem;
+  --radius: 0.5rem;
   --background: oklch(0 0 0);
   --foreground: oklch(0.98 0 0);
   --surface: oklch(0.105 0 0);
@@ -440,3 +441,33 @@ a {
   transition-duration: 120ms;
   transition-timing-function: ease-out;
 }
+
+
+/* Dark glass for the Settings gear and the notification bell: readable on any banner or background (1.8). */
+.glass-btn {
+  background: rgb(0 0 0 / 0.55);
+  color: rgb(255 255 255 / 0.92);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.glass-btn:hover { background: rgb(0 0 0 / 0.75); color: #fff; }
+
+/* One shared box for sections and empty states: a step lighter than black plus a faint border (1.16). */
+.section-box {
+  background: oklch(0.13 0 0);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-2xl);
+}
+.empty-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
+  padding: 2rem 1rem; text-align: center; color: var(--muted-foreground); font-size: 0.875rem;
+  background: oklch(0.13 0 0);
+  border: 1px dashed rgb(255 255 255 / 0.12);
+  border-radius: var(--radius-2xl);
+}
+
+/* The video player corner is small and almost square (4-6px). Fullscreen stays square. */
+.episode-player-stage { border-radius: 5px; }
+.episode-player-stage:fullscreen,
+.episode-player-stage:-webkit-full-screen { border-radius: 0; }

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2, Search } from "lucide-react";
 
 import { useCatalog } from "@/hooks/use-catalog";
+import { collapseTmdb } from "@/lib/tmdb-links";
 import { prettyLabel, titleOf, type MediaCard } from "@/lib/anilist";
 import { cloudToCard } from "@/lib/custom-series";
 import { browseQuery } from "@/lib/queries";
@@ -144,13 +145,24 @@ export function HeaderSearch({
   const own = useMemo(() => {
     const q = debounced.toLowerCase();
     if (!q) return [];
-    return catalog
-      .filter((a) => a.custom && a.title.toLowerCase().includes(q))
+    return collapseTmdb(catalog.filter((a) => a.custom))
+      .filter((a) => a.title.toLowerCase().includes(q))
       .slice(0, 3)
       .map(cloudToCard);
   }, [catalog, debounced]);
 
-  const items: MediaCard[] = [...own, ...(results.data?.media ?? [])].slice(
+  // A poster or title you set in the admin also shows in the dropdown (1.9).
+  const editedById = useMemo(() => new Map(catalog.filter((a) => a.edited).map((a) => [a.anilistId, a])), [catalog]);
+  const fromAniList = (results.data?.media ?? []).map((m): MediaCard => {
+    const e = editedById.get(m.id);
+    if (!e) return m;
+    return {
+      ...m,
+      title: { ...m.title, english: e.title, romaji: e.title },
+      coverImage: e.poster ? { ...m.coverImage, extraLarge: e.poster, large: e.poster } : m.coverImage,
+    };
+  });
+  const items: MediaCard[] = [...own, ...fromAniList].slice(
     0,
     8,
   );

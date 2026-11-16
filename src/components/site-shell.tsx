@@ -15,6 +15,7 @@ import { AnnouncementsPopover } from "@/components/announcements-popover";
 import { HeaderSearch } from "@/components/header-search";
 import { SettingsPanel } from "@/components/settings-panel";
 import { useAppearance } from "@/hooks/use-appearance";
+import { syncSiteAppearance } from "@/lib/site-appearance";
 import { useBackdropValue } from "@/hooks/use-backdrop";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { cn } from "@/lib/utils";
@@ -156,6 +157,11 @@ export function SiteShell({
       window.clearTimeout(t);
       stop?.();
     };
+  }, []);
+
+  // One small read per visit: apply the admin's default look when it is newer than the one on this device.
+  useEffect(() => {
+    void syncSiteAppearance();
   }, []);
 
   useEffect(() => {

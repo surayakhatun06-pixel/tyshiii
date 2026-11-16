@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Link2,
   MoreHorizontal,
+  Palette,
 } from "lucide-react";
 
 import { AdminLink, type AdminSearch, type AdminView } from "@/components/admin/ui";
@@ -20,6 +21,7 @@ const TABS: { label: string; icon: typeof Boxes; s: AdminSearch; views: (AdminVi
   { label: "Universal Servers", icon: Link2, s: { view: "universal" }, views: ["universal"] },
   { label: "Bulk import", icon: Boxes, s: { view: "bulk" }, views: ["bulk"] },
   { label: "Spotlight", icon: GalleryHorizontal, s: { view: "spotlight" }, views: ["spotlight"] },
+  { label: "Backgrounds", icon: Palette, s: { view: "backgrounds" }, views: ["backgrounds"] },
   { label: "Announcements", icon: Bell, s: { view: "announcements" }, views: ["announcements"] },
   {
     label: "Extra options",

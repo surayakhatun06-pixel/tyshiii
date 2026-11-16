@@ -293,7 +293,7 @@ function FranchiseCard({ entry }: { entry: Franchise }) {
           {poster}
         </Link>
       )}
-      <div className="mt-2 max-h-24 overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-out md:group-hover:mt-0 md:group-hover:max-h-0 md:group-hover:-translate-y-1 md:group-hover:opacity-0 md:group-focus-within:mt-0 md:group-focus-within:max-h-0 md:group-focus-within:-translate-y-1 md:group-focus-within:opacity-0 motion-reduce:transition-none">
+      <div className="mt-2 transition-opacity duration-200 ease-out md:group-hover:opacity-0 md:group-focus-within:opacity-0 motion-reduce:transition-none">
         <p className="text-sm font-bold text-primary">{entry.label}</p>
         <p className="line-clamp-2 text-sm font-semibold leading-snug">
           {titleOf(node)}

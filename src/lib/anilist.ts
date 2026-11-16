@@ -567,3 +567,21 @@ export async function getFranchiseChain(
   }
   return [...found.values()];
 }
+
+
+/**
+ * The one episode label shown on the public site (no SUB / DUB counts).
+ *  finished -> full total; airing -> latest aired episode; movie -> "Movie"; nothing known -> null (hide it).
+ */
+export function episodeLabel(m: {
+  format?: string | null;
+  episodes?: number | null;
+  nextAiringEpisode?: { episode: number } | null;
+}): string | null {
+  if (m.format === "MOVIE") return "Movie";
+  if (m.nextAiringEpisode) {
+    const aired = m.nextAiringEpisode.episode - 1;
+    return aired > 0 ? `${aired} eps` : null;
+  }
+  return m.episodes && m.episodes > 0 ? `${m.episodes} eps` : null;
+}

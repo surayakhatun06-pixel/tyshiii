@@ -51,6 +51,7 @@ export function SettingsPanel({
     playerGlow,
     phoneStyle,
     phoneSticky,
+    phoneScaled,
     update,
   } = useAppearance();
   const { adShield, freshPlayer, altHost, update: updateShield } = useShield();
@@ -69,7 +70,8 @@ export function SettingsPanel({
     playerCorners !== PLAYER_DEFAULTS.playerCorners ||
     playerGlow !== PLAYER_DEFAULTS.playerGlow ||
     phoneStyle !== PLAYER_DEFAULTS.phoneStyle ||
-    phoneSticky !== PLAYER_DEFAULTS.phoneSticky;
+    phoneSticky !== PLAYER_DEFAULTS.phoneSticky ||
+    phoneScaled !== PLAYER_DEFAULTS.phoneScaled;
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("look");
   const [backgroundsOpen, setBackgroundsOpen] = useState(false);
@@ -82,8 +84,8 @@ export function SettingsPanel({
           aria-label="Settings"
           title="Settings"
           className={cn(
-            "grid size-9 place-items-center rounded-xl text-muted-foreground transition hover:bg-surface-2/70 hover:text-foreground md:size-10",
-            open && "bg-surface-2/70 text-foreground",
+            "glass-btn grid size-9 place-items-center rounded-xl transition md:size-10",
+            open && "bg-black/80",
           )}
         >
           <Settings className="size-5" />
@@ -198,6 +200,7 @@ export function SettingsPanel({
                         options={[
                           { value: "black" as PlayerBg, label: "Black" },
                           { value: "banner" as PlayerBg, label: "Banner" },
+                          { value: "poster" as PlayerBg, label: "Poster" },
                           { value: "mix" as PlayerBg, label: "Blurred" },
                         ]}
                       />
@@ -340,6 +343,12 @@ export function SettingsPanel({
                 hint="The video stays at the top of the screen while you scroll the episodes."
                 checked={phoneSticky}
                 onChange={(v) => update({ phoneSticky: v })}
+              />
+              <ToggleRow
+                label="Scaled to fit"
+                hint="Some players have cramped buttons on a small screen. This shows them at a normal width, scaled down."
+                checked={phoneScaled}
+                onChange={(v) => update({ phoneScaled: v })}
               />
             </div>
           </div>

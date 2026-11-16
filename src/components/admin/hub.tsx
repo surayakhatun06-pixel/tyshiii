@@ -1,7 +1,7 @@
 import { ActivityLog } from "@/components/admin/activity-log";
 import { StorageReport } from "@/components/admin/storage-report";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, Boxes, ChevronDown, ChevronRight, GalleryHorizontal, Library, Link2, ListPlus, Plus, Server, ShieldCheck } from "lucide-react";
+import { Bell, Boxes, ChevronDown, ChevronRight, GalleryHorizontal, Library, Palette, Link2, ListPlus, Plus, Server, ShieldCheck } from "lucide-react";
 import type { User } from "firebase/auth";
 
 import { AccessCheck } from "@/components/admin/access-check";
@@ -195,6 +195,7 @@ export function AdminHub({ user }: { user: User }) {
           title="Spotlight"
           note={spotlight.length ? `${spotlight.length} slides on the home page` : "Home hero uses AniList trending"}
         />
+        <Row s={{ view: "backgrounds" }} icon={Palette} title="Backgrounds" note="The site's default look: theme colour, all black, banner or poster" />
         <Row s={{ view: "announcements" }} icon={Bell} title="Announcements" note="Dated updates shown in the notification bell" />
       </section>
 

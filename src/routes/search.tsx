@@ -5,6 +5,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { SiteShell } from "@/components/site-shell";
 import { AnimeCard, AnimeCardSkeleton } from "@/components/anime-card";
 import { useCatalog } from "@/hooks/use-catalog";
+import { collapseTmdb } from "@/lib/tmdb-links";
 import { cloudToCard } from "@/lib/custom-series";
 import { browseMedia } from "@/lib/anilist";
 
@@ -41,18 +42,20 @@ function SearchPage() {
 
   // Your own (custom) series live in Firestore, not AniList, so search them there too.
   const { catalog } = useCatalog();
-  const cloud = useMemo(() => catalog.filter((a) => a.custom), [catalog]);
+  // TMDB imports are hidden from lists: they only show when someone searches by name (one card per series).
+  const cloud = useMemo(() => catalog.filter((a) => a.custom && !a.hidden), [catalog]);
+  const searchable = useMemo(() => collapseTmdb(catalog.filter((a) => a.custom)), [catalog]);
   const needle = debounced.toLowerCase();
   const own = useMemo(
     () =>
       needle
-        ? cloud.filter(
+        ? searchable.filter(
             (a) =>
               a.title.toLowerCase().includes(needle) ||
               a.genres.some((g) => g.toLowerCase().includes(needle)),
           )
         : [],
-    [cloud, needle],
+    [searchable, needle],
   );
 
   const results = useInfiniteQuery({

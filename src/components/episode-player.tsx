@@ -69,7 +69,7 @@ export function EpisodePlayer({
       ref={stageRef}
       className={cn(
         "episode-player-stage relative aspect-video w-full overflow-hidden bg-black max-sm:rounded-none fullscreen:flex fullscreen:aspect-auto fullscreen:h-screen fullscreen:rounded-none fullscreen:max-sm:rounded-none",
-        playerCorners === "square" ? "sm:rounded-none" : "sm:rounded-xl",
+        playerCorners === "square" ? "sm:rounded-none" : "sm:rounded-[5px]",
         playerGlow &&
           "shadow-[0_0_90px_-12px_rgba(255,255,255,0.22)] fullscreen:shadow-none",
         // Phone options (the default, "full", is exactly how the player has always looked on a phone).

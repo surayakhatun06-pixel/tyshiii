@@ -28,7 +28,18 @@ export function mediaQuery(id: number) {
     queryKey: ["anilist", "media", id],
     queryFn: () => (custom ? getCustomMedia(id) : getMedia(id)),
     // Custom series come from Firestore, so always re-check them when a page opens.
-    staleTime: custom ? 0 : HOUR,
+    // A running show is re-checked every 5 minutes, and again right after its next episode's air time (1.6).
+    // A finished show keeps the one-hour cache, so AniList is not called more than needed.
+    staleTime: custom ? 0 : (query) => (query.state.data?.nextAiringEpisode ? 1000 * 60 * 5 : HOUR),
+    refetchInterval: custom
+      ? false
+      : (query) => {
+          const next = (query.state.data as { nextAiringEpisode?: { timeUntilAiring: number } | null } | undefined)?.nextAiringEpisode;
+          if (!next) return false;
+          // Never faster than every 5 minutes, but wake up just after the air time passes.
+          const untilAir = Math.max(30_000, (next.timeUntilAiring + 90) * 1000);
+          return Math.min(1000 * 60 * 5, untilAir);
+        },
   });
 }
 
@@ -86,5 +97,6 @@ export const recentlyAiredQuery = () =>
   queryOptions({
     queryKey: ["anilist", "recently-aired"],
     queryFn: () => recentlyAired(100),
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: 1000 * 60 * 5,
   });

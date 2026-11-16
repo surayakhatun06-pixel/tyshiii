@@ -59,8 +59,8 @@ export function AnnouncementsPopover() {
           aria-label={unread ? "Announcements, new updates" : "Announcements"}
           title="Announcements"
           className={cn(
-            "relative grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition hover:bg-surface-2/70 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:absolute md:right-8 md:size-10",
-            open && "bg-surface-2/70 text-foreground",
+            "relative grid size-9 shrink-0 place-items-center glass-btn rounded-xl transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:absolute md:right-8 md:size-10",
+            open && "bg-black/80",
           )}
         >
           <Bell className="size-4" />

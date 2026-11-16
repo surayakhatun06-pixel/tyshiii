@@ -7,12 +7,13 @@ import { useBackdropArt } from "@/hooks/use-backdrop";
  *  - playerBg: what sits behind the video
  *      "black"  plain black behind the whole watch page (default)
  *      "mix"    the anime's art, blurred and darkened, behind the whole watch page
+ *      "poster" the anime's poster, blurred as you choose, behind the whole watch page
  *      "banner" the anime's art behind the whole watch page, with only the blur you choose
  *  - playerBlur: blur strength in px, used by "mix" and "banner"
  *  - detailsBg: the picture behind the details / watch pages (banner, poster or plain black)
  *  - blackEverywhere: one switch that forces plain black behind every page (no banner, no poster, no blur)
  */
-export type PlayerBg = "mix" | "banner" | "black";
+export type PlayerBg = "mix" | "banner" | "poster" | "black";
 export type DetailsBg = "banner" | "poster" | "black";
 
 export type PlayerLayout = "side" | "theater";
@@ -36,6 +37,8 @@ export type Appearance = {
   phoneStyle: PhoneStyle;
   /** Phones: keep the player at the top of the screen while the page scrolls. */
   phoneSticky: boolean;
+  /** Phones: hosts with cramped controls are shown at a normal width and scaled to fit (default on). */
+  phoneScaled: boolean;
 };
 
 /** The video player as it has always been. "Reset" in Settings puts these back. */
@@ -46,6 +49,7 @@ export const PLAYER_DEFAULTS = {
   playerGlow: false,
   phoneStyle: "full",
   phoneSticky: false,
+  phoneScaled: true,
 } as const;
 
 /** Full black is now the default everywhere (new key, so it applies to everyone once). A new key: earlier versions saved other choices ("transparent", a 0-40px blur) that no longer exist. */
@@ -61,7 +65,7 @@ function read(): Appearance {
   try {
     const raw = JSON.parse(window.localStorage.getItem(KEY) ?? "{}") as Partial<Appearance>;
     return {
-      playerBg: raw.playerBg === "banner" || raw.playerBg === "mix" ? raw.playerBg : "black",
+      playerBg: raw.playerBg === "banner" || raw.playerBg === "mix" || raw.playerBg === "poster" ? raw.playerBg : "black",
       playerBlur:
         typeof raw.playerBlur === "number" && raw.playerBlur >= 0 && raw.playerBlur <= MAX_PLAYER_BLUR
           ? Math.round(raw.playerBlur)
@@ -74,6 +78,7 @@ function read(): Appearance {
       playerGlow: raw.playerGlow === true,
       phoneStyle: raw.phoneStyle === "card" ? "card" : PLAYER_DEFAULTS.phoneStyle,
       phoneSticky: raw.phoneSticky === true,
+      phoneScaled: raw.phoneScaled !== false,
     };
   } catch {
     return DEFAULTS;
@@ -114,6 +119,18 @@ export function useAppearance() {
   }, []);
 
   return { ...value, update };
+}
+
+/** The admin's default look, applied once per admin save (see site-appearance.ts). */
+export function applyAppearanceDefaults(patch: Partial<Appearance>) {
+  ensureLoaded();
+  cache = { ...cache, ...patch };
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(cache));
+  } catch {
+    /* not remembered */
+  }
+  listeners.forEach((l) => l());
 }
 
 /** Sets the page art for a details / watch page, following the "Details background" choice. */

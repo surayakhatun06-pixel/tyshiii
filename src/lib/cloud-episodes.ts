@@ -35,6 +35,9 @@ export type CloudEpisode = {
   thumbnail?: string;
   /** Actual dub premiere date in milliseconds; never inferred from an upload/save time. */
   dubReleasedAt?: number;
+  /** TMDB imports: the air date (YYYY-MM-DD) and a marker so the episode is kept even before links are filled in. */
+  airDate?: string;
+  tmdb?: boolean;
   /** Default server (“Server 1”) links. */
   subUrl?: string;
   dubUrl?: string;
@@ -60,7 +63,22 @@ export type CloudAnime = {
   status: string | null;
   /** Last time episodes or details changed (ms since epoch), when known. */
   updatedAt: number | null;
+  /** TMDB imports (admin only imports them; they are shown only in search, Continue watching and Saved). */
+  source?: "tmdb";
+  hidden?: boolean;
+  kind?: "tv" | "movie";
+  tmdbId?: number;
+  tmdbSeason?: number;
+  seriesKey?: string;
+  seriesTitle?: string;
+  seasonNumber?: number;
+  /** TMDB link patterns for this series (filled in when someone plays). */
+  tmdbLinks?: TmdbLinks;
 };
+
+/** One server of TMDB patterns. Up to 2 named languages; the first is the default audio. */
+export type TmdbServerPattern = { name: string; langs: { label: string; pattern: string }[] };
+export type TmdbLinks = { servers: TmdbServerPattern[] };
 
 export type AnimeRef = {
   anilistId: number;
@@ -255,6 +273,8 @@ export function parseEpisodeMap(
           : undefined,
       subUrl: str(r.subUrl),
       dubUrl: str(r.dubUrl),
+      airDate: str(r.airDate),
+      tmdb: r.tmdb === true ? true : undefined,
     };
     if (r.servers && typeof r.servers === "object") {
       const servers: Record<string, ServerLinks> = {};
@@ -270,7 +290,7 @@ export function parseEpisodeMap(
       }
       if (Object.keys(servers).length) ep.servers = servers;
     }
-    if (hasAnyLink(ep)) out.push(ep);
+    if (hasAnyLink(ep) || ep.tmdb) out.push(ep);
   }
   return out.sort((a, b) => a.number - b.number);
 }
@@ -327,7 +347,36 @@ export function parseAnime(
       data.updatedAt && typeof data.updatedAt.toMillis === "function"
         ? (data.updatedAt.toMillis() as number)
         : null,
+    ...(data.source === "tmdb"
+      ? {
+          source: "tmdb" as const,
+          hidden: data.hidden !== false,
+          kind: data.kind === "movie" ? ("movie" as const) : ("tv" as const),
+          tmdbId: typeof data.tmdbId === "number" ? data.tmdbId : undefined,
+          tmdbSeason: typeof data.tmdbSeason === "number" ? data.tmdbSeason : undefined,
+          seriesKey: str(data.seriesKey),
+          seriesTitle: str(data.seriesTitle),
+          seasonNumber: typeof data.seasonNumber === "number" ? data.seasonNumber : undefined,
+          tmdbLinks: parseTmdbLinks(data.tmdbLinks),
+        }
+      : {}),
   };
+}
+
+/** Keeps only well-formed link patterns (max 2 languages per server). */
+export function parseTmdbLinks(raw: unknown): TmdbLinks | undefined {
+  const servers = (raw as { servers?: unknown } | undefined)?.servers;
+  if (!Array.isArray(servers)) return undefined;
+  const out: TmdbServerPattern[] = [];
+  for (const sv of servers) {
+    const name = str((sv as { name?: unknown })?.name);
+    const langs = (Array.isArray((sv as { langs?: unknown })?.langs) ? (sv as { langs: unknown[] }).langs : [])
+      .map((l) => ({ label: str((l as { label?: unknown })?.label) ?? "", pattern: str((l as { pattern?: unknown })?.pattern) ?? "" }))
+      .filter((l) => l.pattern)
+      .slice(0, 2);
+    if (name && langs.length) out.push({ name, langs });
+  }
+  return out.length ? { servers: out } : undefined;
 }
 
 export function animeToRef(a: CloudAnime): AnimeRef {

@@ -303,7 +303,7 @@ function Slide({
       {/* Soft shading under the text only (it sits below the text and buttons, so they stay bright). */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-linear-to-t from-background via-background/45 to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 left-0 w-[65%] bg-linear-to-r from-background/55 via-background/15 to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-background/40 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-linear-to-b from-black/85 via-black/45 to-transparent" />
 
       <div
         className={cn(

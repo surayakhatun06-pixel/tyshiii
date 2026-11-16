@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Captions, ChevronLeft, ChevronRight, Mic } from "lucide-react";
+import { Captions, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { DragScroller } from "@/components/drag-scroller";
 import { useCatalog } from "@/hooks/use-catalog";
-import { prettyLabel, timeAgo, titleOf } from "@/lib/anilist";
-import { episodeSources, readEpisodeLists } from "@/lib/cloud-episodes";
-import { firebaseConfigured } from "@/lib/firebase";
+import { episodeLabel, prettyLabel, timeAgo, titleOf } from "@/lib/anilist";
+import { usePrefs } from "@/hooks/use-prefs";
 import { recentlyAiredQuery } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +23,7 @@ type Item = {
   format: string | null;
   year: number | null;
   episodes: number | null;
+  label: string | null;
   onSite: boolean;
 };
 
@@ -41,7 +41,8 @@ const POPULAR = 15000;
  */
 export function LatestEpisodes() {
   const [lang, setLang] = useState<Lang>("sub");
-  const { catalog, ready } = useCatalog();
+  const { set: setPrefs } = usePrefs();
+  const { catalog } = useCatalog();
   const aired = useQuery(recentlyAiredQuery());
 
   const catalogById = useMemo(
@@ -58,23 +59,9 @@ export function LatestEpisodes() {
     [catalog],
   );
 
-  const dubCandidates = useMemo(
-    () => catalog.filter((anime) => anime.dubCount > 0).slice(0, 32),
-    [catalog],
-  );
-  const dubIds = useMemo(
-    () => dubCandidates.map((anime) => anime.anilistId),
-    [dubCandidates],
-  );
-  const dubEpisodes = useQuery({
-    queryKey: ["cloud", "recent-dub-episodes", dubIds],
-    queryFn: () => readEpisodeLists(dubIds),
-    enabled: lang === "dub" && firebaseConfigured && ready && dubIds.length > 0,
-    staleTime: 1000 * 60 * 10,
-  });
-
   const items: Item[] = useMemo(() => {
-    if (lang === "sub") {
+    {
+      // Sub and Dub show the same recent episodes; Dub opens them in DUB (it is always available from the universal link).
       const rows = aired.data ?? [];
       const popular = rows.filter((r) => (r.media.popularity ?? 0) >= POPULAR);
       // If it's a quiet day, fall back to the most popular of what did air.
@@ -107,40 +94,12 @@ export function LatestEpisodes() {
             format: r.media.format,
             year: r.media.seasonYear,
             episodes: r.media.episodes,
+            label: episodeLabel(r.media),
             onSite: onSite.has(r.media.id),
           };
         });
     }
-    const now = Date.now();
-    const cutoff = now - 14 * 24 * 60 * 60 * 1000;
-    return dubCandidates
-      .flatMap((anime) =>
-        (dubEpisodes.data?.[anime.anilistId] ?? [])
-          .filter(
-            (episode) =>
-              episode.dubReleasedAt !== undefined &&
-              episode.dubReleasedAt >= cutoff &&
-              episode.dubReleasedAt <= now &&
-              episodeSources(episode).some((source) => source.lang === "dub"),
-          )
-          .map((episode) => ({
-            key: `dub-${anime.anilistId}-${episode.number}`,
-            animeId: anime.anilistId,
-            title: anime.title,
-            image: anime.poster,
-            ep: episode.number,
-            at: episode.dubReleasedAt ?? null,
-            subs: null,
-            dubs: anime.dubCount,
-            format: anime.format,
-            year: anime.year,
-            episodes: anime.episodeCount,
-            onSite: false,
-          })),
-      )
-      .sort((a, b) => (b.at ?? 0) - (a.at ?? 0))
-      .slice(0, 24);
-  }, [lang, aired.data, onSite, dubCandidates, catalogById, dubEpisodes.data]);
+  }, [aired.data, onSite, catalogById]);
 
   const scroller = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState({ current: 1, total: 1 });
@@ -180,12 +139,7 @@ export function LatestEpisodes() {
       el.scrollBy({ left: dir * (el.clientWidth + 12), behavior: "smooth" });
   };
 
-  const loading =
-    items.length === 0 &&
-    (lang === "sub"
-      ? aired.isPending
-      : (firebaseConfigured && !ready) ||
-        (dubIds.length > 0 && dubEpisodes.isPending));
+  const loading = items.length === 0 && aired.isPending;
 
   return (
     <section aria-labelledby="latest-heading" className="min-w-0">
@@ -259,9 +213,7 @@ export function LatestEpisodes() {
           ))
         ) : items.length === 0 ? (
           <p className="py-10 text-sm text-muted-foreground">
-            {lang === "dub"
-              ? "No recently released dubbed episodes were found."
-              : "Couldn't load the latest episodes right now."}
+            Couldn't load the latest episodes right now.
           </p>
         ) : (
           items.map((it) => (
@@ -275,6 +227,7 @@ export function LatestEpisodes() {
                 aria-label={`Open ${it.title} details`}
                 draggable={false}
                 className="block"
+                onClick={() => setPrefs({ lang })}
               >
                 <div className="relative aspect-[2/3] overflow-hidden rounded-2xl bg-surface-2 ring-1 ring-border transition-[box-shadow,ring-color] group-hover:ring-primary/55 group-hover:shadow-[0_8px_28px_var(--theme-wash)]">
                   {it.image && (
@@ -302,22 +255,10 @@ export function LatestEpisodes() {
                 </div>
               </Link>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {it.subs ? (
-                  <span className={pill}>
-                    <Captions className="size-3" aria-label="Sub episodes" />
-                    {it.subs}
-                  </span>
-                ) : null}
-                {it.dubs ? (
-                  <span className={pill}>
-                    <Mic className="size-3" aria-label="Dub episodes" />
-                    {it.dubs}
-                  </span>
-                ) : null}
-                {!it.subs && !it.dubs && it.episodes ? (
+                {it.label ? (
                   <span className={pill}>
                     <Captions className="size-3" aria-label="Episodes" />
-                    {it.episodes}
+                    {it.label}
                   </span>
                 ) : null}
                 {it.onSite ? (
@@ -330,7 +271,7 @@ export function LatestEpisodes() {
                 ) : null}
                 {it.year ? <span className={pill}>{it.year}</span> : null}
               </div>
-              <div className="mt-2 max-h-10 overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-out group-hover:mt-0 group-hover:max-h-0 group-hover:-translate-y-1 group-hover:opacity-0 group-focus-within:mt-0 group-focus-within:max-h-0 group-focus-within:-translate-y-1 group-focus-within:opacity-0">
+              <div className="mt-2 transition-opacity duration-200 ease-out group-hover:opacity-0 group-focus-within:opacity-0">
                 <h3 className="line-clamp-2 text-sm font-semibold leading-snug">
                   <Link
                     to="/anime/$id"

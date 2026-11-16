@@ -15,6 +15,18 @@ export type ThemeId = (typeof THEMES)[number]["id"];
 export const DEFAULT_THEME: ThemeId = "mono";
 
 const isTheme = (v: unknown): v is ThemeId => THEMES.some((t) => t.id === v);
+export const isThemeId = isTheme;
+
+/** Set the theme without a hook (used when the admin default is applied). */
+export function applyThemeId(next: ThemeId) {
+  try {
+    window.localStorage.setItem(THEME_KEY, next);
+  } catch {
+    /* the theme still applies for this visit */
+  }
+  document.documentElement.setAttribute("data-theme", next);
+  window.dispatchEvent(new Event(EVENT));
+}
 
 function read(): ThemeId {
   if (typeof window === "undefined") return DEFAULT_THEME;

@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowDownUp,
   Captions,
+  Mic,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,7 @@ import { usePrefs } from "@/hooks/use-prefs";
 import { useEpisodeLibrary } from "@/hooks/use-cloud-episodes";
 import { useMedia } from "@/hooks/use-media";
 import { useAppearance } from "@/hooks/use-appearance";
+import { TMDB_ID_MIN, getTmdbDoc, tmdbLangNames } from "@/lib/tmdb-links";
 import { useShield } from "@/hooks/use-shield";
 import {
   FranchiseSections,
@@ -115,9 +117,11 @@ export const Route = createFileRoute("/anime/$id/watch")({
  * Behind the whole watch page. "Full black" (default) is plain black; the other two put the
  * anime's art there, blurred as far as the Settings slider says.
  */
-function WatchBackdrop({ art }: { art: string | null }) {
+function WatchBackdrop({ art, poster }: { art: string | null; poster: string | null }) {
   const { playerBg, playerBlur, blackEverywhere } = useAppearance();
-  const showArt = !blackEverywhere && playerBg !== "black" && Boolean(art);
+  // "poster" uses the poster picture; the other two use the banner.
+  const picture = playerBg === "poster" ? (poster ?? art) : art;
+  const showArt = !blackEverywhere && playerBg !== "black" && Boolean(picture);
   return (
     <div
       aria-hidden
@@ -126,7 +130,7 @@ function WatchBackdrop({ art }: { art: string | null }) {
       {showArt && (
         <>
           <img
-            src={art ?? undefined}
+            src={picture ?? undefined}
             alt=""
             draggable={false}
             className="absolute -inset-[8%] h-[116%] w-[116%] max-w-none object-cover"
@@ -157,6 +161,17 @@ function WatchAnimePage() {
   // Episodes saved by hand, plus every episode AniList says is available (played by the Universal Servers).
   const { videos: savedVideos, ready: savedReady } = useEpisodeLibrary(animeIds);
   const { videos, sourcesFor, ready } = useAllEpisodes(media, savedVideos, savedReady);
+  // TMDB series show the language names you gave (Eng, Hindi...) instead of Sub and Dub.
+  const [langNames, setLangNames] = useState<{ sub: string; dub: string } | null>(null);
+  useEffect(() => {
+    setLangNames(null);
+    if (animeId < TMDB_ID_MIN) return;
+    let active = true;
+    void getTmdbDoc(animeId).then((doc) => active && setLangNames(tmdbLangNames(doc)));
+    return () => {
+      active = false;
+    };
+  }, [animeId]);
   const { records } = useProgress();
   const { prefs, set: setPrefs } = usePrefs();
   const { playerLayout, playerSide } = useAppearance();
@@ -171,7 +186,25 @@ function WatchAnimePage() {
   const [range, setRange] = useState(0);
   const [descending, setDescending] = useState(false);
   const [hideWatched, setHideWatched] = useState(false);
-  const [grid, setGrid] = useState(true);
+  // List view is the default; the choice is remembered on this device (1.21).
+  const [grid, setGridState] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("tyshi-episode-view") === "grid") setGridState(true);
+    } catch {
+      /* default list */
+    }
+  }, []);
+  const setGrid = (update: (v: boolean) => boolean) =>
+    setGridState((v) => {
+      const next = update(v);
+      try {
+        window.localStorage.setItem("tyshi-episode-view", next ? "grid" : "list");
+      } catch {
+        /* not remembered */
+      }
+      return next;
+    });
   // The episode tray is independently scrollable on touch and desktop so the season panels stay reachable.
 
   const eps = useMemo(
@@ -408,7 +441,7 @@ function WatchAnimePage() {
 
   const shell = (children: React.ReactNode) => (
     <SiteShell>
-      <WatchBackdrop art={art} />
+      <WatchBackdrop art={art} poster={anime.cover} />
       <div className="relative">
         <div className="mx-auto max-w-[1900px] px-0 pb-6 pt-0 sm:px-3 sm:pt-3 md:px-5">
           {children}
@@ -675,6 +708,24 @@ function WatchAnimePage() {
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {subheading}
               </p>
+              {/* Chips: the air date of THIS episode (only when a real source gave one) and what is available. */}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
+                {current.airDate && !Number.isNaN(Date.parse(current.airDate)) && (
+                  <span className="rounded-md bg-white/10 px-2 py-1">
+                    {new Date(`${current.airDate}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })}
+                  </span>
+                )}
+                {hasSub && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-1">
+                    <Captions className="size-3" /> {langNames?.sub ?? "Sub"}
+                  </span>
+                )}
+                {hasDub && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2 py-1">
+                    <Mic className="size-3" /> {langNames?.dub ?? "Dub"}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <button
@@ -721,7 +772,7 @@ function WatchAnimePage() {
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger className={pill} aria-label="Sub or dub">
                     <Captions className="size-4" />
-                    {lang === "sub" ? "Sub" : "Dub"}
+                    {lang === "sub" ? (langNames?.sub ?? "Sub") : (langNames?.dub ?? "Dub")}
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-36">
                     <DropdownMenuLabel>Audio</DropdownMenuLabel>
@@ -740,10 +791,10 @@ function WatchAnimePage() {
                       }}
                     >
                       <DropdownMenuRadioItem value="sub" disabled={!hasSub}>
-                        Sub
+                        {langNames?.sub ?? "Sub"}
                       </DropdownMenuRadioItem>
                       <DropdownMenuRadioItem value="dub" disabled={!hasDub}>
-                        Dub
+                        {langNames?.dub ?? "Dub"}
                       </DropdownMenuRadioItem>
                     </DropdownMenuRadioGroup>
                   </DropdownMenuContent>
@@ -842,7 +893,7 @@ function WatchAnimePage() {
           <aside
             aria-labelledby="episodes-heading"
             className={cn(
-              "mx-1 flex min-w-0 flex-col rounded-2xl border border-white/10 bg-black/75 p-3 sm:mx-0",
+              "section-box mx-1 flex min-w-0 flex-col p-3 sm:mx-0",
             )}
           >
             <div className="flex min-w-0 items-center gap-1">
@@ -936,9 +987,10 @@ function WatchAnimePage() {
               )}
             >
               {visible.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">
+                <div className="empty-box">
+                  <Captions className="size-5 opacity-60" />
                   No episodes to show.
-                </p>
+                </div>
               ) : grid ? (
                 <div className="grid grid-cols-5 gap-1.5">
                   {/* Match the compact number-only episode grid from the user's reference. */}
@@ -980,7 +1032,7 @@ function WatchAnimePage() {
                   })}
                 </div>
               ) : (
-                <ul className="flex flex-col gap-2">
+                <ul className="flex flex-col gap-1">
                   {visible.map((e) => {
                     const rec = progressByEpisode.get(e.id);
                     const isCurrent = e.id === current.id;
@@ -989,51 +1041,36 @@ function WatchAnimePage() {
                         ? "Extra"
                         : `Episode ${e.episode}`
                       : e.title;
+                    const langs = sourcesFor(e);
+                    const hasSubIcon = langs.some((x) => x.lang === "sub");
+                    const hasDubIcon = langs.some((x) => x.lang === "dub");
                     return (
+                      // The li never moves; only the button inside lifts, so hovering cannot flicker.
                       <li key={e.id}>
                         <button
                           type="button"
                           onClick={() => goTo(e)}
                           aria-current={isCurrent ? "true" : undefined}
                           className={cn(
-                            "flex w-full items-stretch gap-3 overflow-hidden rounded-xl border p-0 text-left transition",
+                            "flex w-full items-stretch gap-3 overflow-hidden rounded-lg border p-0 text-left transition duration-200 ease-out hover:scale-[1.025] hover:shadow-lg hover:shadow-black/50 motion-reduce:transition-none",
                             isCurrent
-                              ? "border-white/25 bg-surface"
-                              : "border-white/10 bg-surface/60 hover:border-foreground/30",
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-white/10 bg-white/[0.06] hover:border-white/25",
                           )}
                         >
-                          <EpisodeThumb
-                            src={thumbnailFor(e)}
-                            fallback={art}
-                            className="w-[132px] shrink-0"
-                          >
-                            <span
-                              className={cn(
-                                "absolute bottom-1.5 left-1.5 rounded-md bg-black/75 px-1.5 py-0.5 text-[10px] font-bold text-white",
-                                isCurrent &&
-                                  "bg-primary text-primary-foreground",
-                              )}
-                            >
-                              {e.episode !== undefined
-                                ? `EP ${e.episode}`
-                                : "EXTRA"}
+                          {/* Flush against the left edge, full row height, about 40% of the row. */}
+                          <EpisodeThumb src={thumbnailFor(e)} fallback={art} className="w-[40%] shrink-0 rounded-none">
+                            <span className="absolute bottom-1 left-1 rounded-md bg-black/75 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                              {e.episode !== undefined ? `EP ${e.episode}` : "EXTRA"}
                             </span>
-                            {rec && !rec.completed ? (
-                              <ProgressBar value={percentOf(rec) ?? 0} />
-                            ) : null}
+                            {rec && !rec.completed ? <ProgressBar value={percentOf(rec) ?? 0} /> : null}
                           </EpisodeThumb>
-                          <span className="flex min-w-0 flex-1 flex-col justify-center py-2 pr-3">
-                            <span className="line-clamp-2 text-sm font-bold leading-snug text-foreground">
-                              {title}
-                            </span>
-                            <span className="mt-1 text-xs text-muted-foreground">
-                              {isCurrent
-                                ? "Now playing"
-                                : rec?.completed
-                                  ? "Watched"
-                                  : rec
-                                    ? "In progress"
-                                    : " "}
+                          <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-2 pr-3">
+                            <span className="line-clamp-2 text-sm font-bold leading-snug">{title}</span>
+                            <span className="flex items-center gap-1.5 opacity-80">
+                              {hasSubIcon && <Captions className="size-3.5" aria-label="Sub" />}
+                              {hasDubIcon && <Mic className="size-3.5" aria-label="Dub" />}
+                              {rec?.completed && !isCurrent && <Check className="size-3.5" aria-label="Watched" />}
                             </span>
                           </span>
                         </button>

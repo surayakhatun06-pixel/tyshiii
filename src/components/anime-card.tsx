@@ -22,6 +22,7 @@ import {
   prettyLabel,
   titleOf,
   type MediaCard as MediaCardType,
+  episodeLabel,
 } from "@/lib/anilist";
 import {
   WATCH_STATUS_LABEL,
@@ -155,7 +156,7 @@ export function AnimeCard({
             </h3>
             <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
               {media.format && <span>{prettyLabel(media.format)}</span>}
-              {media.episodes && media.format !== "MOVIE" ? <span>· {media.episodes} ep</span> : null}
+              {media.format !== "MOVIE" && episodeLabel(media) ? <span>· {episodeLabel(media)}</span> : null}
               {media.seasonYear ? <span>· {media.seasonYear}</span> : null}
             </div>
           </div>
@@ -181,7 +182,7 @@ export function AnimeCard({
         </div>
       </Link>
 
-      <div className="mt-2 max-h-10 overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-out group-hover:mt-0 group-hover:max-h-0 group-hover:-translate-y-1 group-hover:opacity-0 group-focus-within:mt-0 group-focus-within:max-h-0 group-focus-within:-translate-y-1 group-focus-within:opacity-0">
+      <div className="mt-2 transition-opacity duration-200 ease-out group-hover:opacity-0 group-focus-within:opacity-0">
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors duration-150 group-hover:text-white">
           <Link
             to="/anime/$id"

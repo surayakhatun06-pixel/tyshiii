@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Library, ListPlus, Plus, Server } from "lucide-react";
 
 import { Row } from "@/components/admin/hub";
+import { SandboxHostsEditor } from "@/components/admin/sandbox-hosts-editor";
 import { AdminHeader, lastOpened, type LastOpened } from "@/components/admin/ui";
 
 /** Extra options: single episodes and the older tools. Most work happens in Bulk import and Universal Servers. */
@@ -24,6 +25,9 @@ export function MoreView() {
         <Row s={{ view: "library" }} icon={Library} title="My anime" note="Everything in your database · edit, delete" />
         <Row s={{ view: "new" }} icon={Plus} title="Add anime or series" note="From AniList, or your own series" />
         <Row s={{ view: "servers" }} icon={Server} title="Servers (older tool)" note="Your older embed servers: SUB and DUB links" />
+      </div>
+      <div className="mt-5">
+        <SandboxHostsEditor />
       </div>
     </>
   );

@@ -12,6 +12,8 @@ export type SavedVideo = {
   episode?: number;
   /** Optional episode art. Falls back to the anime artwork when empty. */
   thumbnail?: string;
+  /** Air date (YYYY-MM-DD) when a source gave one (TMDB imports). Never invented. */
+  airDate?: string;
   seriesName?: string;
   seriesLogo?: string;
   /** Firestore episodes only: SUB and DUB links of the default server. `url` is the default one. */

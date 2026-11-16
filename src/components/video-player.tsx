@@ -10,6 +10,15 @@ import {
   type Track,
 } from "@/lib/audio-track";
 import { SANDBOX, useShield } from "@/hooks/use-shield";
+import { useAppearance } from "@/hooks/use-appearance";
+import { hostInList, useNoSandboxHosts } from "@/lib/sandbox-hosts";
+
+/**
+ * Hosts whose own player controls look broken in a narrow phone frame (doc 1.15).
+ * On a phone these load at a normal 640px width and are scaled down to fit. Easy to extend: add a name.
+ */
+const PHONE_SCALE_HOSTS = ["cinesrc.st"];
+const SCALE_BASE_WIDTH = 640;
 
 const IFRAME_ALLOW =
   "autoplay; encrypted-media; fullscreen; picture-in-picture";
@@ -50,6 +59,34 @@ export function VideoPlayer({
   const [start] = useState(() => (canSeekEmbed(embed) ? startAt : 0));
   const stage = useRef<HTMLDivElement>(null);
 
+  // Desktop keys without clicking the video first (doc 1.20): Space pauses, arrows seek and change volume.
+  // For embeds we cannot control, the key is kept from scrolling the page and focus moves into the player frame.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia("(pointer: fine)").matches) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.altKey || event.metaKey) return;
+      if (![" ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      const t = event.target;
+      if (t instanceof HTMLElement && t.closest("input, textarea, select, button, a, summary, [contenteditable], [role=slider], [role=dialog], [role=menu]")) return;
+      const root = stage.current;
+      if (!root || root.contains(t as Node)) return; // the player's own handler deals with it
+      const video = root.querySelector("video");
+      if (video) {
+        event.preventDefault();
+        root.focus({ preventScroll: true });
+        root.dispatchEvent(new KeyboardEvent("keydown", { key: event.key, bubbles: true }));
+        return;
+      }
+      const frameEl = root.querySelector("iframe");
+      if (frameEl) {
+        event.preventDefault(); // stop the page from scrolling
+        frameEl.focus({ preventScroll: true });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   function seek(offset: number) {
     const video = stage.current?.querySelector("video");
     if (!video) return;
@@ -88,6 +125,10 @@ export function VideoPlayer({
         } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
           event.preventDefault();
           seek(event.key === "ArrowLeft" ? -10 : 10);
+        } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+          event.preventDefault();
+          video.muted = false;
+          video.volume = Math.max(0, Math.min(1, video.volume + (event.key === "ArrowUp" ? 0.1 : -0.1)));
         } else if (event.key.toLowerCase() === "m") {
           event.preventDefault();
           video.muted = !video.muted;
@@ -234,7 +275,39 @@ function FramePlayer({
   // Ad shield: unknown embed pages (anime players) run in a locked box with no popups and no redirects.
   // Well-known hosts (YouTube, Vimeo, Drive) are left alone so their own buttons keep working.
   const { adShield, freshPlayer } = useShield();
-  const shielded = adShield && embed.provider === "generic";
+  const { isExempt, setViewerHost } = useNoSandboxHosts();
+  const { phoneScaled } = useAppearance();
+  const hostName = (() => {
+    try {
+      return new URL(src).hostname.replace(/^www\./, "");
+    } catch {
+      return "";
+    }
+  })();
+  // Hosts on the "no sandbox" list (admin list or the viewer's own choice) load without the sandbox.
+  const exempt = isExempt(hostName);
+  const shielded = adShield && embed.provider === "generic" && !exempt;
+  // Phone only: hosts with cramped controls get a 640px page scaled down to fit.
+  const box = useRef<HTMLDivElement>(null);
+  const [boxSize, setBoxSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => setBoxSize({ w: el.clientWidth, h: el.clientHeight }));
+    watch.observe(el);
+    setBoxSize({ w: el.clientWidth, h: el.clientHeight });
+    return () => watch.disconnect();
+  }, []);
+  const scaled =
+    phoneScaled && hostInList(hostName, PHONE_SCALE_HOSTS) && boxSize.w > 0 && boxSize.w < SCALE_BASE_WIDTH - 40;
+  const scale = scaled ? boxSize.w / SCALE_BASE_WIDTH : 1;
+  // "Not playing?" hint: shown 8 seconds after loading while the shield is on and the host gave no sign of playback.
+  const [hint, setHint] = useState(false);
+  useEffect(() => {
+    if (!shielded || !loaded) return;
+    const t = window.setTimeout(() => !gotSignal.current && setHint(true), 8000);
+    return () => window.clearTimeout(t);
+  }, [shielded, loaded]);
   const fresh = freshPlayer && embed.provider === "generic";
   // An ad layer can still send the player ITSELF to an ad page (a sandbox can't stop that). A real player loads once,
   // so a second load after it has been running means it was redirected: put the real player back.
@@ -367,8 +440,16 @@ function FramePlayer({
     return () => timers.forEach(window.clearTimeout);
   }, [track, loaded, src, embed.provider]);
 
+  // Desktop keyboard: keep focus inside the player so Space and the arrows reach the host's own shortcuts (doc 1.20).
+  const focusFrame = () => {
+    if (typeof window === "undefined" || !window.matchMedia("(pointer: fine)").matches) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && active.closest("input, textarea, select, [contenteditable]")) return;
+    frame.current?.focus();
+  };
+
   return (
-    <>
+    <div ref={box} className="absolute inset-0 overflow-hidden" onMouseEnter={focusFrame}>
       {!loaded && (
         <div
           className="pointer-events-none absolute inset-0 animate-pulse bg-surface-2"
@@ -377,7 +458,7 @@ function FramePlayer({
       )}
       <iframe
         // A new iframe is made whenever the protection changes, because these settings are read at load time.
-        key={`${shielded ? "shield" : "open"}-${fresh ? "fresh" : "saved"}-${recoveries}`}
+        key={`${shielded ? "shield" : "open"}-${fresh ? "fresh" : "saved"}-${scaled ? "scaled" : "normal"}-${recoveries}`}
         ref={frame}
         src={src}
         title={title}
@@ -388,9 +469,41 @@ function FramePlayer({
         {...(fresh
           ? ({ credentialless: true } as Record<string, boolean>)
           : {})}
-        onLoad={handleLoad}
-        className="relative h-full w-full border-0"
+        onLoad={() => {
+          handleLoad();
+          focusFrame();
+        }}
+        className="relative border-0"
+        style={
+          scaled
+            ? {
+                width: SCALE_BASE_WIDTH,
+                height: boxSize.h / scale,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+              }
+            : { width: "100%", height: "100%" }
+        }
       />
-    </>
+      {hint && shielded && (
+        <div className="absolute inset-x-0 bottom-0 z-20 flex items-center justify-center gap-2 bg-black/80 px-3 py-2 text-xs text-white">
+          <span>Not playing?</span>
+          <button
+            type="button"
+            className="rounded-md bg-white/15 px-2.5 py-1 font-semibold hover:bg-white/25"
+            onClick={() => {
+              setViewerHost(hostName, true);
+              setHint(false);
+              toast.info(`${hostName} now plays without protection. Its ads and pop-ups may return.`);
+            }}
+          >
+            Try without protection
+          </button>
+          <button type="button" aria-label="Dismiss" className="px-1 text-white/70 hover:text-white" onClick={() => setHint(false)}>
+            ×
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

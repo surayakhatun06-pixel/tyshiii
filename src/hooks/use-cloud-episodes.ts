@@ -7,6 +7,7 @@ import {
   type CloudEpisode,
 } from "@/lib/cloud-episodes";
 import { describeFirebaseError, firebaseConfigured } from "@/lib/firebase";
+import { TMDB_ID_MIN, getTmdbDoc, isTmdbRecord, withTmdbLinks } from "@/lib/tmdb-links";
 
 export function cloudEpisodeId(number: number) {
   return `ep-${number}`;
@@ -15,12 +16,13 @@ export function cloudEpisodeId(number: number) {
 function toSaved(animeId: number, ep: CloudEpisode): SavedVideo {
   return {
     id: cloudEpisodeId(ep.number),
-    url: episodeSources(ep)[0].url,
+    url: episodeSources(ep)[0]?.url ?? "",
     title: ep.title || `Episode ${ep.number}`,
     addedAt: 0,
     animeId,
     episode: ep.number,
     thumbnail: ep.thumbnail,
+    airDate: ep.airDate,
     subUrl: ep.subUrl,
     dubUrl: ep.dubUrl,
     servers: ep.servers,
@@ -49,23 +51,31 @@ export function useCloudEpisodes(animeIds: number[]) {
       watchEpisodeList(
         id,
         (episodes, offline) => {
-          setByAnime((m) =>
-            new Map(m).set(
-              id,
-              episodes.map((e) => toSaved(id, e)),
-            ),
-          );
-          setLoaded((s) => new Set(s).add(id));
-          setErrors((m) => {
-            const next = new Map(m);
-            if (offline)
-              next.set(
+          const finish = (list: typeof episodes) => {
+            setByAnime((m) =>
+              new Map(m).set(
                 id,
-                "Couldn't load the saved episodes. Check your connection.",
-              );
-            else next.delete(id);
-            return next;
-          });
+                list.map((e) => toSaved(id, e)),
+              ),
+            );
+            setLoaded((s) => new Set(s).add(id));
+            setErrors((m) => {
+              const next = new Map(m);
+              if (offline)
+                next.set(
+                  id,
+                  "Couldn't load the saved episodes. Check your connection.",
+                );
+              else next.delete(id);
+              return next;
+            });
+          };
+          // TMDB seasons keep no links per episode: fill the patterns in now (season + episode inside the link).
+          if (id >= TMDB_ID_MIN)
+            void getTmdbDoc(id).then((doc) =>
+              finish(doc && isTmdbRecord(doc) ? withTmdbLinks(doc, episodes) : episodes),
+            );
+          else finish(episodes);
         },
         (error) => {
           console.error(error);

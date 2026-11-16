@@ -4,6 +4,7 @@ import { SiteShell } from "@/components/site-shell";
 import { AdminGate } from "@/components/admin/admin-gate";
 import { AdminHub } from "@/components/admin/hub";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { SourceSwitch } from "@/components/admin/tmdb-panel";
 import { BulkView } from "@/components/admin/bulk-view";
 import { DetailsView } from "@/components/admin/details-view";
 import { EpisodesView } from "@/components/admin/episodes-view";
@@ -13,10 +14,11 @@ import { ServersView } from "@/components/admin/servers-view";
 import { SpotlightView } from "@/components/admin/spotlight-view";
 import { MoreView } from "@/components/admin/more-view";
 import { UniversalServersView } from "@/components/admin/universal-servers-view";
+import { BackgroundsView } from "@/components/admin/backgrounds-view";
 import { SiteAnnouncementsEditor } from "@/components/admin/site-announcements-editor";
 import type { AdminSearch, AdminView } from "@/components/admin/ui";
 
-const VIEWS: AdminView[] = ["universal", "more", "episodes", "library", "spotlight", "new", "details", "bulk", "servers", "announcements"];
+const VIEWS: AdminView[] = ["universal", "more", "episodes", "library", "spotlight", "new", "details", "bulk", "servers", "announcements", "backgrounds"];
 const positive = (v: unknown) => {
   const n = Number(v);
   return Number.isSafeInteger(n) && n > 0 ? n : undefined;
@@ -51,15 +53,15 @@ function AdminPage() {
               {(() => {
             switch (view) {
               case "episodes":
-                return <EpisodesView animeId={anime} />;
+                return anime ? <EpisodesView animeId={anime} /> : <SourceSwitch><EpisodesView animeId={anime} /></SourceSwitch>;
               case "library":
                 return <LibraryView />;
               case "details":
                 return <DetailsView animeId={anime} />;
               case "new":
-                return <NewView from={from} />;
+                return <SourceSwitch><NewView from={from} /></SourceSwitch>;
               case "bulk":
-                return <BulkView rootId={anime} />;
+                return anime ? <BulkView rootId={anime} /> : <SourceSwitch><BulkView rootId={anime} /></SourceSwitch>;
               case "servers":
                 return <ServersView animeId={anime} />;
               case "spotlight":
@@ -68,6 +70,8 @@ function AdminPage() {
                 return <UniversalServersView />;
               case "more":
                 return <MoreView />;
+              case "backgrounds":
+                return <BackgroundsView />;
               case "announcements":
                 return <SiteAnnouncementsEditor />;
               default:

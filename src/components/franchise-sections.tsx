@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 
 import { DragScroller } from "@/components/drag-scroller";
 import { AnimeCard } from "@/components/anime-card";
@@ -21,7 +21,8 @@ import {
   type MediaCard,
   type MediaDetail,
 } from "@/lib/anilist";
-import { isCustomId } from "@/lib/cloud-episodes";
+import { isCustomId, type CloudAnime } from "@/lib/cloud-episodes";
+import { TMDB_ID_MIN, getSeriesSeasons, getTmdbDoc } from "@/lib/tmdb-links";
 import { buildFranchise, type FranchiseEdge } from "@/lib/franchise";
 import { cn } from "@/lib/utils";
 
@@ -126,7 +127,7 @@ function EntryCard({ entry }: { entry: Entry }) {
           </span>
         ) : null}
       </div>
-      <div className="mt-2 max-h-14 overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-out md:group-hover:mt-0 md:group-hover:max-h-0 md:group-hover:-translate-y-1 md:group-hover:opacity-0 md:group-focus-within:mt-0 md:group-focus-within:max-h-0 md:group-focus-within:-translate-y-1 md:group-focus-within:opacity-0 motion-reduce:transition-none">
+      <div className="mt-2 transition-opacity duration-200 ease-out md:group-hover:opacity-0 md:group-focus-within:opacity-0 motion-reduce:transition-none">
         <p className={cn("text-sm font-bold", entry.tone)}>{entry.label}</p>
         <p className="line-clamp-2 text-sm font-semibold leading-snug">
           {entry.current ? (
@@ -353,6 +354,112 @@ function RelatedSection({
   );
 }
 
+
+/* ------------------------------------------------------------ Seasons panel */
+
+type SeasonTileData = {
+  key: string | number;
+  id: number;
+  current: boolean;
+  image: string | null;
+  /** "Season 3 · Part 1": the part goes on its own line. */
+  label: string;
+  year: number | null;
+  full: boolean;
+};
+
+/**
+ * The Seasons panel (1.23): a lighter box with an icon, tiles two per row at 16:9, the artwork darkened so the
+ * centred bold title and the year are always readable, a CURRENT badge on the season being watched,
+ * and one full-width tile for Special / Movie / OVA entries.
+ */
+function SeasonsBox({ tiles }: { tiles: SeasonTileData[] }) {
+  return (
+    <section aria-labelledby="seasons-heading" className="section-box mx-1 p-3 sm:mx-0">
+      <h2 id="seasons-heading" className="flex items-center gap-2 px-1 pb-2 text-sm font-extrabold uppercase tracking-wider">
+        <Layers className="size-4" /> Seasons
+      </h2>
+      <ul aria-label="Seasons" className="grid grid-cols-2 gap-2 px-1 py-1">
+        {tiles.map((t) => {
+          const [line1, line2] = t.label.split(" · ");
+          const body = (
+            <>
+              {t.image && (
+                <img
+                  src={t.image}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable={false}
+                  className="season-art absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
+                />
+              )}
+              {/* Dark layer so the text reads on bright artwork. */}
+              <span className="absolute inset-0 bg-black/60" />
+              {t.current && (
+                <span className="absolute left-1.5 top-1.5 rounded-md bg-primary px-1.5 py-0.5 text-[9px] font-extrabold tracking-wider text-primary-foreground">
+                  CURRENT
+                </span>
+              )}
+              <span className="relative flex h-full flex-col items-center justify-center px-2 text-center text-white">
+                <span className="line-clamp-2 text-[clamp(0.95rem,3.6vw,1.15rem)] font-extrabold leading-tight drop-shadow-lg">{line1}</span>
+                {line2 && <span className="text-xs font-bold text-white/90">{line2}</span>}
+                {t.year ? <span className="mt-0.5 text-xs font-semibold text-white/80">{t.year}</span> : null}
+              </span>
+            </>
+          );
+          const cls = cn(
+            "group relative block aspect-video overflow-hidden rounded-lg border bg-black transition duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+            t.current ? "border-primary" : "border-white/15",
+          );
+          return (
+            <li key={t.key} className={cn("season-bubble", t.full && "col-span-2")} data-season-current={t.current ? "true" : "false"}>
+              {t.current ? (
+                <div className={cls} aria-current="true">
+                  {body}
+                </div>
+              ) : (
+                <Link to="/anime/$id" params={{ id: String(t.id) }} draggable={false} aria-label={`Open ${t.label}`} className={cls}>
+                  {body}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** Imported TMDB series: the Seasons panel is built from the records that share the seriesKey. */
+function TmdbSeasonsPanel({ media }: { media: MediaDetail }) {
+  const [rows, setRows] = useState<CloudAnime[]>([]);
+  useEffect(() => {
+    let active = true;
+    void getTmdbDoc(media.id)
+      .then((doc) => (doc?.seriesKey && doc.kind !== "movie" ? getSeriesSeasons(doc.seriesKey) : []))
+      .then((list) => active && setRows(list))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [media.id]);
+  if (rows.length < 2) return null;
+  return (
+    <SeasonsBox
+      tiles={rows.map((r) => ({
+        key: r.anilistId,
+        id: r.anilistId,
+        current: r.anilistId === media.id,
+        image: r.banner ?? r.poster,
+        label: r.seasonNumber === 0 ? "Specials" : `Season ${r.seasonNumber ?? 1}`,
+        year: r.year,
+        full: r.seasonNumber === 0,
+      }))}
+    />
+  );
+}
+
 /**
  * Under the episode tray: the main seasons as picture tiles, then everything related
  * (movies, OVAs, specials, side stories) as a tidy list.
@@ -371,7 +478,9 @@ export function SeasonsRelated({
     e.node.format === "TV" ||
     e.node.format === "TV_SHORT" ||
     e.node.format === "SPECIAL";
-  const seasons = franchise.filter(isMain);
+  // Specials (for example "Special 2023") are not seasons: they get one full-width tile at the bottom.
+  const seasons = franchise.filter((e) => isMain(e) && e.node.format !== "SPECIAL");
+  const specials = franchise.filter((e) => e.node.format === "SPECIAL");
   const others = franchise.filter(
     (e) => !isMain(e) && e.node.format !== "MUSIC",
   );
@@ -418,106 +527,34 @@ export function SeasonsRelated({
       title.match(/\bSeason\s*(\d+)\b/i)?.[1];
     return `Season ${seasonNumber ? Number(seasonNumber) : index + 1}`;
   };
-  if (seasons.length < 2 && related.length === 0) return mobileInfo ?? null;
+  if (seasons.length < 2 && specials.length === 0 && related.length === 0 && media.id < TMDB_ID_MIN) return mobileInfo ?? null;
   return (
     <>
-      {seasons.length > 1 && (
-        <section
-          aria-labelledby="seasons-heading"
-          className="glass mx-1 rounded-2xl p-3 sm:mx-0"
-        >
-          <h2
-            id="seasons-heading"
-            className="px-1 pb-2 text-sm font-extrabold uppercase tracking-wider"
-          >
-            Seasons
-          </h2>
-          <ul
-            aria-label="Anime seasons"
-            className={cn(
-              "grid gap-2 px-1 py-1",
-              seasons.length === 3 ? "grid-cols-3" : "grid-cols-2",
-            )}
-          >
-            {seasons.map((e, index) => {
-              const img = art(e.node);
-              const body = (
-                <>
-                  {img && (
-                    <img
-                      src={img}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      draggable={false}
-                      className="season-art absolute inset-0 h-full w-full object-cover transition-[filter,transform] duration-300 ease-out"
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "absolute inset-0 bg-gradient-to-t",
-                      e.current
-                        ? "from-black/65 via-black/25 to-black/10"
-                        : "from-black/65 via-black/32 to-black/18",
-                    )}
-                  />
-
-                  <span className="relative flex h-full flex-col items-center justify-center px-2 text-center text-white">
-                    <span
-                      className={cn(
-                        "line-clamp-2 font-sans text-[clamp(1rem,4.2vw,1.2rem)] font-extrabold leading-tight tracking-tight drop-shadow-lg",
-                        e.current ? "" : "opacity-95",
-                      )}
-                    >
-                      {seasonLabel(e, index)}
-                    </span>
-                    {e.node.seasonYear ? (
-                      <span className="mt-1 text-xs font-semibold text-white/85 sm:text-sm">
-                        {e.node.seasonYear}
-                      </span>
-                    ) : null}
-                  </span>
-                </>
-              );
-              const cls = cn(
-                "relative block aspect-[16/11] overflow-hidden rounded-xl border border-white/15 bg-black/80 shadow-lg transition duration-300 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                seasons.length === 3 &&
-                  (index === 0
-                    ? "col-span-1"
-                    : index === 1
-                      ? "col-span-2"
-                      : "col-span-3"),
-                e.current
-                  ? "border-[3px] border-primary shadow-[0_0_24px_var(--theme-wash)]"
-                  : "",
-              );
-              return (
-                <li
-                  key={e.id}
-                  className="season-bubble"
-                  data-season-current={e.current ? "true" : "false"}
-                >
-                  {e.current ? (
-                    <div className={cls} aria-current="true">
-                      {body}
-                    </div>
-                  ) : (
-                    <Link
-                      to="/anime/$id"
-                      params={{ id: String(e.node.id) }}
-                      draggable={false}
-                      aria-label={`Open ${titleOf(e.node)}`}
-                      className={cn(cls, "group")}
-                    >
-                      {body}
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+      {(seasons.length > 1 || (seasons.length > 0 && specials.length > 0)) && (
+        <SeasonsBox
+          tiles={[
+            ...seasons.map((e, index) => ({
+              key: e.id,
+              id: e.node.id,
+              current: e.current,
+              image: art(e.node),
+              label: seasonLabel(e, index),
+              year: e.node.seasonYear,
+              full: false,
+            })),
+            ...specials.map((e, index) => ({
+              key: e.id,
+              id: e.node.id,
+              current: e.current,
+              image: art(e.node),
+              label: seasonLabel(e, index),
+              year: e.node.seasonYear,
+              full: true,
+            })),
+          ]}
+        />
       )}
+      {media.id >= TMDB_ID_MIN && <TmdbSeasonsPanel media={media} />}
       {mobileInfo}
       {related.length > 0 && (
         <>

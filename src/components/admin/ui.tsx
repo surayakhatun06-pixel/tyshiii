@@ -5,13 +5,13 @@ import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /** The admin is one page with a few views, picked by ?view=. No view = the hub. */
-export type AdminView = "universal" | "more" | "episodes" | "library" | "spotlight" | "new" | "details" | "bulk" | "servers" | "announcements";
+export type AdminView = "universal" | "more" | "episodes" | "library" | "spotlight" | "new" | "details" | "bulk" | "servers" | "announcements" | "backgrounds";
 export type AdminSearch = { view?: AdminView; anime?: number; from?: number };
 
 export const inputCls =
   "h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary";
 
-export const panel = "rounded-2xl border border-border bg-surface/60 p-4 md:p-5";
+export const panel = "section-box p-4 md:p-5";
 
 export function AdminLink({
   s,

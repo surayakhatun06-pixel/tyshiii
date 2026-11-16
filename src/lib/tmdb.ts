@@ -457,3 +457,138 @@ export async function getSeasonStills(
     });
   return out;
 }
+
+/* ======================================================= v19.19 additions */
+/* Series OR movie search, season episodes, movie collections, and the TMDB Links patterns. */
+
+/** Where the imported records' ids come from (doc 1.2). Series seasons: 1,000,000,000 + tmdbId x 100 + season. Movies: 1,500,000,000 + tmdbId. */
+export const tmdbSeasonRecordId = (tmdbId: number, season: number) => 1_000_000_000 + tmdbId * 100 + season;
+export const tmdbMovieRecordId = (tmdbId: number) => 1_500_000_000 + tmdbId;
+
+const IMG_BIG = "https://image.tmdb.org/t/p/w500";
+const IMG_STILL = "https://image.tmdb.org/t/p/w300";
+const IMG_WIDE = "https://image.tmdb.org/t/p/w1280";
+
+export type TmdbKind = "tv" | "movie";
+export type TmdbMultiHit = TmdbHit & { kind: TmdbKind };
+
+type RawMulti = RawHit & { media_type?: string; title?: string; original_title?: string; release_date?: string };
+
+const toMulti = (r: RawMulti, kind: TmdbKind): TmdbMultiHit => ({
+  ...toHit({
+    ...r,
+    name: kind === "movie" ? (r.title ?? r.original_title) : r.name,
+    original_name: kind === "movie" ? (r.original_title ?? r.title) : r.original_name,
+    first_air_date: kind === "movie" ? r.release_date : r.first_air_date,
+  }),
+  kind,
+});
+
+/** Title or TMDB code. A code is tried as a series first, then as a movie. */
+export async function searchTmdbAny(input: string): Promise<TmdbMultiHit[]> {
+  const t = input.trim();
+  if (!t) return [];
+  if (/^\d{1,9}$/.test(t)) {
+    const out: TmdbMultiHit[] = [];
+    for (const kind of ["tv", "movie"] as const) {
+      try {
+        out.push(toMulti(await call<RawMulti>(`/${kind}/${t}`), kind));
+      } catch {
+        /* not that kind: skip */
+      }
+    }
+    if (!out.length) throw new TmdbError("TMDB has nothing with that code.");
+    return out;
+  }
+  const data = await call<{ results: RawMulti[] }>("/search/multi", { query: t, include_adult: "false" });
+  return data.results
+    .filter((r) => r.media_type === "tv" || r.media_type === "movie")
+    .slice(0, 10)
+    .map((r) => toMulti(r, r.media_type as TmdbKind));
+}
+
+export type TmdbEpisode = { number: number; title: string; still: string | null; airDate: string | null };
+
+/** Every episode TMDB lists for one season. Only aired episodes when `airedOnly`. */
+export async function getTmdbSeasonEpisodes(id: number, season: number, airedOnly = true): Promise<TmdbEpisode[]> {
+  const d = await call<{
+    episodes?: { episode_number: number; name?: string; still_path?: string | null; air_date?: string | null }[];
+  }>(`/tv/${id}/season/${season}`);
+  const now = today();
+  return (d.episodes ?? [])
+    .filter((e) => !airedOnly || (e.air_date ? e.air_date <= now : false))
+    .map((e) => ({
+      number: e.episode_number,
+      title: e.name?.trim() || `Episode ${e.episode_number}`,
+      still: e.still_path ? IMG_STILL + e.still_path : null,
+      airDate: e.air_date ?? null,
+    }))
+    .sort((a, b) => a.number - b.number);
+}
+
+export type TmdbMovie = {
+  id: number;
+  title: string;
+  year: number | null;
+  poster: string | null;
+  backdrop: string | null;
+  overview: string;
+  collection: { id: number; name: string } | null;
+};
+
+export async function getTmdbMovie(id: number): Promise<TmdbMovie> {
+  const r = await call<RawMulti & { backdrop_path?: string | null; belongs_to_collection?: { id: number; name: string } | null }>(`/movie/${id}`);
+  return {
+    id: r.id,
+    title: r.title ?? r.original_title ?? `TMDB ${r.id}`,
+    year: year(r.release_date),
+    poster: r.poster_path ? IMG_BIG + r.poster_path : null,
+    backdrop: r.backdrop_path ? IMG_WIDE + r.backdrop_path : null,
+    overview: r.overview ?? "",
+    collection: r.belongs_to_collection ? { id: r.belongs_to_collection.id, name: r.belongs_to_collection.name } : null,
+  };
+}
+
+/** The movies of one TMDB collection (sequels and spin-offs), oldest first. */
+export async function getTmdbCollection(id: number): Promise<TmdbMovie[]> {
+  const d = await call<{ parts?: (RawMulti & { backdrop_path?: string | null })[] }>(`/collection/${id}`);
+  return (d.parts ?? [])
+    .map((r) => ({
+      id: r.id,
+      title: r.title ?? r.original_title ?? `TMDB ${r.id}`,
+      year: year(r.release_date),
+      poster: r.poster_path ? IMG_BIG + r.poster_path : null,
+      backdrop: r.backdrop_path ? IMG_WIDE + r.backdrop_path : null,
+      overview: r.overview ?? "",
+      collection: { id, name: "" },
+    }))
+    .sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999));
+}
+
+/** Series page data with the big poster and backdrop. */
+export async function getTmdbSeriesFull(id: number) {
+  const base = await getTmdbSeries(id);
+  const raw = await call<{ poster_path?: string | null; backdrop_path?: string | null; genres?: { name: string }[]; first_air_date?: string }>(`/tv/${id}`);
+  return {
+    ...base,
+    posterBig: raw.poster_path ? IMG_BIG + raw.poster_path : base.poster,
+    backdrop: raw.backdrop_path ? IMG_WIDE + raw.backdrop_path : null,
+    genres: (raw.genres ?? []).map((g) => g.name),
+  };
+}
+
+/* ---------------------------------------------------------- link patterns */
+
+/** Fill a pattern: {tmdbId} {season} {episode}; {id} {s} {ep} also work. A movie pattern only needs {tmdbId}. */
+export function fillTmdbPattern(pattern: string, v: { tmdbId: number; season?: number; episode?: number }): string {
+  return pattern
+    .replace(/\{(tmdbId|id)\}/gi, String(v.tmdbId))
+    .replace(/\{(season|s)\}/gi, String(v.season ?? 1))
+    .replace(/\{(episode|ep)\}/gi, String(v.episode ?? 1));
+}
+
+/** The two example patterns from the Master Build Doc (shown in the TMDB Links preview). */
+export const TMDB_PATTERN_EXAMPLES = [
+  "https://www.moviesnexus.fun/tv/{tmdbId}/{season}/{episode}?sv=server-hd",
+  "https://cinesrc.st/embed/tv/{tmdbId}?s={season}&e={episode}",
+];
