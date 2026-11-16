@@ -1,0 +1,740 @@
+
+> tanstack_start_ts@19.11.0 build
+> vite build
+
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 2102 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/public/assets/styles-DtP1TRZJ.css             156.54 kB │ gzip:  22.82 kB
+.output/public/assets/chevron-left-DrqfcUX8.js          0.12 kB │ gzip:   0.14 kB
+.output/public/assets/chevron-right-CUvHAlTw.js         0.12 kB │ gzip:   0.13 kB
+.output/public/assets/index.esm-D0fvES-d.js             0.13 kB │ gzip:   0.13 kB
+.output/public/assets/plus-CcK-uuYD.js                  0.14 kB │ gzip:   0.14 kB
+.output/public/assets/tv-CwQ8xKwt.js                    0.18 kB │ gzip:   0.17 kB
+.output/public/assets/captions-B35rQe-n.js              0.21 kB │ gzip:   0.19 kB
+.output/public/assets/download-jN9Ij6nQ.js              0.22 kB │ gzip:   0.18 kB
+.output/public/assets/external-link-Ds8X1-dT.js         0.24 kB │ gzip:   0.19 kB
+.output/public/assets/arrow-up-BCszK9gB.js              0.26 kB │ gzip:   0.20 kB
+.output/public/assets/pencil-Cp0MUeop.js                0.27 kB │ gzip:   0.22 kB
+.output/public/assets/trash-2-CTN-bAa_.js               0.32 kB │ gzip:   0.21 kB
+.output/public/assets/server-DQbjzRvr.js                0.33 kB │ gzip:   0.21 kB
+.output/public/assets/save-DKIbejxY.js                  0.50 kB │ gzip:   0.32 kB
+.output/public/assets/use-media-BAPIe6L4.js             0.52 kB │ gzip:   0.37 kB
+.output/public/assets/tslib.es6-RDtbomIe.js             0.76 kB │ gzip:   0.40 kB
+.output/public/assets/useInfiniteQuery-CRkLtk5V.js      1.12 kB │ gzip:   0.47 kB
+.output/public/assets/use-watchlist-f8rrCol4.js         1.37 kB │ gzip:   0.71 kB
+.output/public/assets/track-link-CHjoa4BY.js            1.74 kB │ gzip:   0.82 kB
+.output/public/assets/episode-import-DP-Js3Xb.js        2.11 kB │ gzip:   1.04 kB
+.output/public/assets/drag-scroller-BHGC1SDs.js         2.62 kB │ gzip:   1.15 kB
+.output/public/assets/use-videos-Cs4bbzLr.js            2.77 kB │ gzip:   1.13 kB
+.output/public/assets/watchlist-Jk496OJ2.js             2.78 kB │ gzip:   1.18 kB
+.output/public/assets/use-spotlight-CeBMgjUe.js         3.21 kB │ gzip:   1.48 kB
+.output/public/assets/lazyRouteComponent-D5upx9hc.js    3.59 kB │ gzip:   1.29 kB
+.output/public/assets/continue-watching-DUmcZ5h0.js     3.77 kB │ gzip:   1.44 kB
+.output/public/assets/browse-_4rPFHQ_.js                4.20 kB │ gzip:   1.55 kB
+.output/public/assets/search-CZQaNN6s.js                4.32 kB │ gzip:   1.84 kB
+.output/public/assets/dist-D3zd9jpJ.js                  5.27 kB │ gzip:   1.98 kB
+.output/public/assets/alert-dialog-DRmeIbPO.js          5.32 kB │ gzip:   1.91 kB
+.output/public/assets/use-progress-DqvTQ9M0.js          7.78 kB │ gzip:   3.03 kB
+.output/public/assets/history-BrfflJL9.js               8.44 kB │ gzip:   2.88 kB
+.output/public/assets/video-player-CeJ516g2.js          9.53 kB │ gzip:   3.90 kB
+.output/public/assets/react-dom-66hab0gy.js            12.32 kB │ gzip:   4.35 kB
+.output/public/assets/watch-C2QbClie.js                18.08 kB │ gzip:   5.59 kB
+.output/public/assets/cloud-episodes-CdrV9igW.js       19.67 kB │ gzip:   7.24 kB
+.output/public/assets/routes-Cv_eBldT.js               22.70 kB │ gzip:   7.16 kB
+.output/public/assets/franchise-lTj2zdzb.js            23.87 kB │ gzip:   8.20 kB
+.output/public/assets/anime._id.index-I7c_u3oQ.js      24.14 kB │ gzip:   7.61 kB
+.output/public/assets/anime._id.edit-DY7tkgva.js       25.76 kB │ gzip:   7.38 kB
+.output/public/assets/anime-card-BMB3jGXT.js           31.09 kB │ gzip:   9.31 kB
+.output/public/assets/index.esm2017-rDzmA1Bo.js        32.26 kB │ gzip:  11.01 kB
+.output/public/assets/anime._id.watch-D9eGW_Xf.js      41.61 kB │ gzip:  11.67 kB
+.output/public/assets/index.esm-Bo9lynFY.js           125.88 kB │ gzip:  35.84 kB
+.output/public/assets/admin-BNstGDlw.js               222.54 kB │ gzip:  59.20 kB
+.output/public/assets/site-shell-DRHhI_j7.js          245.69 kB │ gzip:  83.82 kB
+.output/public/assets/index-1vEmQAKl.js               318.73 kB │ gzip:  98.15 kB
+.output/public/assets/index.esm-CZ0VJ-ew.js           348.32 kB │ gzip: 104.45 kB
+
+✓ built in 3.50s
+[PLUGIN_TIMINGS] JavaScript callbacks ran for 2.5s of this 3.4s build (73%).
+2 callbacks are listed without a time. Their calls overlapped, so the time inside one call includes work from other calls. To find their cost, profile the build with `node --cpu-prof`:
+  - plugin tanstack-start-core:import-protection resolveId (6617 calls)
+  - plugin tanstack-start-core::server-fn:client transform (15 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+
+vite v8.3.4 building ssr environment for production...
+transforming...
+✓ 175 modules transformed.
+rendering chunks...
+computing gzip size...
+node_modules/.nitro/vite/services/ssr/assets/styles-DtP1TRZJ.css                     156.54 kB │ gzip: 22.82 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-plugin-adapters-D9UWiqvJ.js         0.22 kB │ gzip:  0.16 kB
+node_modules/.nitro/vite/services/ssr/assets/rolldown-runtime-D7D4PA-g.js              0.36 kB │ gzip:  0.25 kB
+node_modules/.nitro/vite/services/ssr/assets/use-media-DwCWIcGv.js                     1.00 kB │ gzip:  0.57 kB
+node_modules/.nitro/vite/services/ssr/assets/start-DOAT1i3y.js                         1.56 kB │ gzip:  0.71 kB
+node_modules/.nitro/vite/services/ssr/assets/use-watchlist-TKGeS9CK.js                 2.10 kB │ gzip:  0.89 kB
+node_modules/.nitro/vite/services/ssr/assets/episode-import-D66BIUIJ.js                3.42 kB │ gzip:  1.36 kB
+node_modules/.nitro/vite/services/ssr/assets/track-link-BcGqJ-DF.js                    3.81 kB │ gzip:  1.64 kB
+node_modules/.nitro/vite/services/ssr/assets/watchlist-B1NeeIrX.js                     4.46 kB │ gzip:  1.56 kB
+node_modules/.nitro/vite/services/ssr/assets/drag-scroller-CC0ThanS.js                 4.49 kB │ gzip:  1.48 kB
+node_modules/.nitro/vite/services/ssr/index.js                                         4.63 kB │ gzip:  1.93 kB
+node_modules/.nitro/vite/services/ssr/assets/alert-dialog-60u4hPYs.js                  4.85 kB │ gzip:  1.41 kB
+node_modules/.nitro/vite/services/ssr/assets/use-videos-Bug0qQOF.js                    4.89 kB │ gzip:  1.75 kB
+node_modules/.nitro/vite/services/ssr/assets/continue-watching-BtaRPdHB.js             5.35 kB │ gzip:  1.80 kB
+node_modules/.nitro/vite/services/ssr/assets/use-spotlight-C3m_X-Vg.js                 5.50 kB │ gzip:  2.21 kB
+node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-CPqFUYfx.js    6.11 kB │ gzip:  1.19 kB
+node_modules/.nitro/vite/services/ssr/assets/search-C310Ze2c.js                        6.32 kB │ gzip:  2.22 kB
+node_modules/.nitro/vite/services/ssr/assets/skeletons-Cr_5ldLU.js                     6.70 kB │ gzip:  1.97 kB
+node_modules/.nitro/vite/services/ssr/assets/browse-DIpKTcHJ.js                        6.79 kB │ gzip:  2.00 kB
+node_modules/.nitro/vite/services/ssr/assets/franchise-gURz31-u.js                     7.14 kB │ gzip:  2.39 kB
+node_modules/.nitro/vite/services/ssr/assets/history-ZGxO6hrK.js                      12.16 kB │ gzip:  3.52 kB
+node_modules/.nitro/vite/services/ssr/assets/use-progress-Cr-FjU7f.js                 14.64 kB │ gzip:  4.83 kB
+node_modules/.nitro/vite/services/ssr/assets/anime-card-BARgKsPz.js                   15.19 kB │ gzip:  3.75 kB
+node_modules/.nitro/vite/services/ssr/assets/video-player-zumJe-0b.js                 15.49 kB │ gzip:  5.49 kB
+node_modules/.nitro/vite/services/ssr/assets/router-QhE6uGwS.js                       17.76 kB │ gzip:  4.73 kB
+node_modules/.nitro/vite/services/ssr/assets/watch-BMnJwxzx.js                        27.54 kB │ gzip:  6.69 kB
+node_modules/.nitro/vite/services/ssr/assets/cloud-episodes-Cd_vozXQ.js               32.39 kB │ gzip:  9.86 kB
+node_modules/.nitro/vite/services/ssr/assets/routes-DtH9IXb5.js                       34.46 kB │ gzip:  9.35 kB
+node_modules/.nitro/vite/services/ssr/assets/anime._id.index-Ctott2we.js              36.75 kB │ gzip:  9.57 kB
+node_modules/.nitro/vite/services/ssr/assets/anime._id.edit-DSCsWEO1.js               40.36 kB │ gzip:  9.27 kB
+node_modules/.nitro/vite/services/ssr/assets/anime._id.watch-9neXnSyO.js              62.93 kB │ gzip: 15.01 kB
+node_modules/.nitro/vite/services/ssr/assets/site-shell-IvwRJ7Bb.js                   66.56 kB │ gzip: 19.53 kB
+node_modules/.nitro/vite/services/ssr/assets/server-CCfDGHeh.js                       69.84 kB │ gzip: 17.81 kB
+node_modules/.nitro/vite/services/ssr/assets/admin-CjnmB4iG.js                       347.13 kB │ gzip: 82.28 kB
+
+✓ built in 1.46s
+
+[nitro] o Building [Nitro] (preset: cloudflare-module, compatibility: 2026-11-02)
+[nitro] √ Generated public .output/public
+vite v8.3.4 building nitro environment for production...
+
+ WARN  inlineDynamicImports option is ignored because the codeSplitting option is specified.
+
+`output.codeSplitting.groups[0].name` is a function. Set `output.codeSplitting.groups[0].debugName` so the bundler timing report can identify this group.
+transforming...
+✓ 2076 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/server/_ssr/empty-plugin-adapters-D9UWiqvJ.mjs          0.23 kB │ gzip:   0.16 kB
+.output/server/_libs/radix-ui__number.mjs                       0.32 kB │ gzip:   0.24 kB
+.output/server/_ssr/rolldown-runtime-D7D4PA-g.mjs               0.41 kB │ gzip:   0.29 kB
+.output/server/_chunks/ssr-renderer.mjs                         0.60 kB │ gzip:   0.36 kB
+.output/server/_libs/radix-ui__react-direction.mjs              0.82 kB │ gzip:   0.43 kB
+.output/server/_libs/hookable.mjs                               1.17 kB │ gzip:   0.52 kB
+.output/server/_ssr/use-media-DwCWIcGv.mjs                      1.24 kB │ gzip:   0.70 kB
+.output/server/_runtime.mjs                                     1.44 kB │ gzip:   0.67 kB
+.output/server/_ssr/start-DOAT1i3y.mjs                          1.52 kB │ gzip:   0.70 kB
+.output/server/_libs/radix-ui__primitive.mjs                    1.83 kB │ gzip:   0.72 kB
+.output/server/_ssr/use-watchlist-TKGeS9CK.mjs                  2.42 kB │ gzip:   1.02 kB
+.output/server/_libs/class-variance-authority+clsx.mjs          3.17 kB │ gzip:   1.24 kB
+.output/server/_ssr/episode-import-D66BIUIJ.mjs                 3.47 kB │ gzip:   1.39 kB
+.output/server/_ssr/track-link-BcGqJ-DF.mjs                     3.86 kB │ gzip:   1.68 kB
+.output/server/_ssr/ssr.mjs                                     4.57 kB │ gzip:   1.93 kB
+.output/server/_ssr/drag-scroller-CC0ThanS.mjs                  4.95 kB │ gzip:   1.64 kB
+.output/server/_ssr/watchlist-B1NeeIrX.mjs                      5.15 kB │ gzip:   1.66 kB
+.output/server/_ssr/alert-dialog-60u4hPYs.mjs                   5.43 kB │ gzip:   1.56 kB
+.output/server/_ssr/use-spotlight-C3m_X-Vg.mjs                  5.75 kB │ gzip:   2.32 kB
+.output/server/_tanstack-start-manifest_v-CPqFUYfx.mjs          6.17 kB │ gzip:   1.22 kB
+.output/server/_ssr/continue-watching-BtaRPdHB.mjs              6.31 kB │ gzip:   1.96 kB
+.output/server/_ssr/search-C310Ze2c.mjs                         7.43 kB │ gzip:   2.37 kB
+.output/server/_ssr/franchise-gURz31-u.mjs                      8.04 kB │ gzip:   2.57 kB
+.output/server/_ssr/browse-DIpKTcHJ.mjs                         8.09 kB │ gzip:   2.15 kB
+.output/server/_libs/radix-ui__react-popover.mjs               11.21 kB │ gzip:   2.82 kB
+.output/server/_libs/tanstack__history.mjs                     12.33 kB │ gzip:   3.66 kB
+.output/server/_ssr/history-ZGxO6hrK.mjs                       14.28 kB │ gzip:   3.70 kB
+.output/server/_libs/tanstack__react-query.mjs                 15.31 kB │ gzip:   4.56 kB
+.output/server/_libs/h3-v2+rou3+srvx+unenv.mjs                 15.92 kB │ gzip:   4.39 kB
+.output/server/_libs/firebase.mjs                              16.06 kB │ gzip:   4.52 kB
+.output/server/_ssr/video-player-zumJe-0b.mjs                  16.31 kB │ gzip:   5.61 kB
+.output/server/_ssr/anime-card-BARgKsPz.mjs                    17.08 kB │ gzip:   3.98 kB
+.output/server/_libs/h3+rou3+srvx.mjs                          17.32 kB │ gzip:   4.99 kB
+.output/server/_libs/radix-ui__react-collection.mjs            20.15 kB │ gzip:   4.52 kB
+.output/server/index.mjs                                       22.25 kB │ gzip:   6.16 kB
+.output/server/_libs/radix-ui__react-slider.mjs                24.49 kB │ gzip:   5.84 kB
+.output/server/_libs/@floating-ui/dom+[...].mjs                25.39 kB │ gzip:   6.57 kB
+.output/server/_libs/@floating-ui/core+[...].mjs               25.56 kB │ gzip:   6.32 kB
+.output/server/_libs/@tanstack/router-core+[...].mjs           29.60 kB │ gzip:   7.98 kB
+.output/server/_ssr/watch-BMnJwxzx.mjs                         31.28 kB │ gzip:   6.88 kB
+.output/server/_libs/@floating-ui/react-dom+[...].mjs          32.68 kB │ gzip:   8.25 kB
+.output/server/_ssr/cloud-episodes-Cd_vozXQ.mjs                33.70 kB │ gzip:  10.13 kB
+.output/server/_libs/lucide-react.mjs                          37.57 kB │ gzip:   7.24 kB
+.output/server/_ssr/routes-DtH9IXb5.mjs                        38.33 kB │ gzip:   9.61 kB
+.output/server/_ssr/anime._id.index-Ctott2we.mjs               41.25 kB │ gzip:   9.78 kB
+.output/server/_ssr/anime._id.edit-DSCsWEO1.mjs                45.12 kB │ gzip:   9.47 kB
+.output/server/_ssr/router-QhE6uGwS.mjs                        45.27 kB │ gzip:  11.79 kB
+.output/server/_libs/@radix-ui/react-select+[...].mjs          47.73 kB │ gzip:  10.02 kB
+.output/server/_libs/sonner.mjs                                53.76 kB │ gzip:  12.16 kB
+.output/server/_libs/@radix-ui/react-dropdown-menu+[...].mjs   61.27 kB │ gzip:  11.97 kB
+.output/server/_ssr/server-CCfDGHeh.mjs                        68.06 kB │ gzip:  17.67 kB
+.output/server/_ssr/anime._id.watch-9neXnSyO.mjs               69.95 kB │ gzip:  15.37 kB
+.output/server/_ssr/site-shell-IvwRJ7Bb.mjs                    70.69 kB │ gzip:  19.72 kB
+.output/server/_libs/tailwind-merge.mjs                        88.92 kB │ gzip:  15.71 kB
+.output/server/_libs/@firebase/app+[...].mjs                   94.42 kB │ gzip:  22.06 kB
+.output/server/_libs/@radix-ui/react-alert-dialog+[...].mjs    95.23 kB │ gzip:  21.50 kB
+.output/server/_libs/tanstack__query-core.mjs                 141.88 kB │ gzip:  33.62 kB
+.output/server/_libs/firebase__auth+tslib.mjs                 353.62 kB │ gzip:  68.34 kB
+.output/server/_ssr/admin-CjnmB4iG.mjs                        378.34 kB │ gzip:  83.35 kB
+.output/server/_libs/@tanstack/react-router+[...].mjs         778.73 kB │ gzip: 164.15 kB
+.output/server/_libs/@firebase/firestore+[...].mjs            820.36 kB │ gzip: 193.44 kB
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/index.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/index.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/sonner/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/sonner/dist/index.mjs:1:1 ]
+   │
+ 1 │ 'use client';
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/utils.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/utils.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/CatchBoundary.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouter.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/useRouter.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useNavigate.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/useNavigate.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useMatch.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/useMatch.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/RouterProvider.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/RouterProvider.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useBlocker.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/useBlocker.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useRouterState.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/useRouterState.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/ClientOnly.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/ClientOnly.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/useLocation.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/useLocation.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/link.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/link.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/HeadContent.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/HeadContent.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Asset.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/Asset.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Matches.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/Matches.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Match.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/Match.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/IsRestoringProvider.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/HydrationBoundary.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/QueryErrorResetBoundary.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQuery.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useQuery.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useSuspenseQuery.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useSuspenseInfiniteQuery.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useSuspenseQueries.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useQueries.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useQueries.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useIsFetching.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useIsFetching.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutationState.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useMutationState.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useMutation.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useMutation.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useInfiniteQuery.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/nonRouteComponentContext.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/routerContext.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/routerContext.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-slider/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-slider/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-dialog/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-dialog/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-popover/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-popover/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/matchContext.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/matchContext.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-router/dist/esm/Transitioner.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-router/dist/esm/Transitioner.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/useBaseQuery.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/useBaseQuery.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js" may not be preserved when bundling.
+   ╭─[ node_modules/@tanstack/react-query/build/modern/errorBoundaryUtils.js:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-alert-dialog/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-alert-dialog/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-dropdown-menu/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-select/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-select/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-direction/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-direction/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-primitive/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-primitive/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-focus-guards/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-focus-guards/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-presence/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-presence/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-focus-scope/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-focus-scope/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-dismissable-layer/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-portal/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-portal/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-popper/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-popper/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-menu/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-menu/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-visually-hidden/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-visually-hidden/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-collection/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-collection/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-arrow/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-arrow/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+[MODULE_LEVEL_DIRECTIVE] The semantics of the module level directive "use client" in "node_modules/@radix-ui/react-roving-focus/dist/index.mjs" may not be preserved when bundling.
+   ╭─[ node_modules/@radix-ui/react-roving-focus/dist/index.mjs:1:1 ]
+   │
+ 1 │ "use client";
+   │ ──────┬──────  
+   │       ╰──────── module level directive may not be preserved
+   │ 
+   │ Help: For more information, see https://rolldown.rs/in-depth/directives#other-directives
+───╯
+
+✓ built in 1.59s
+[nitro] i Using auto generated worker name: tanstack-start-ts-documents-codex-2026-11-01-claude-v19-6-please-fix-these-work-tyshi-zone-v19-6
+i Generated .output/server/wrangler.json
+i Generated .wrangler/deploy/config.json
+i Generated .output/public/_headers
+i Generated .output/nitro.json
+
+[nitro] √ You can preview this build using npx vite preview
+[nitro] √ You can deploy this build using npx nitro deploy --prebuilt
