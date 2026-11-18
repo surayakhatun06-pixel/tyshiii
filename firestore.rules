@@ -1,0 +1,113 @@
+rules_version = '2';
+
+// TYSHI ZONE Firestore rules (v10)
+// - Everyone can READ anime, episode lists and the home-page Spotlight setup.
+// - Only admins can WRITE. An admin is a signed-in user that has a document at
+//   admins/{their uid}. Create those documents by hand in the Firebase console;
+//   the browser can never create, change or list them.
+//
+// NEW in v10: the "series" collection (bulk franchise importer). Publish these rules before using it.
+// NEW in v5: the "siteConfig" collection (holds the Spotlight slides chosen in /admin).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+
+    match /anime/{animeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /episodeLists/{animeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Bulk franchise imports: series/{id}, its seasons and their episodes.
+    match /series/{path=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /siteConfig/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Anime requests are created only for titles absent from the public library.
+    match /animeRequests/{requestId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['animeId', 'title', 'poster', 'status', 'createdAt'])
+        && request.resource.data.keys().hasAll(['animeId', 'title', 'poster', 'status', 'createdAt'])
+        && request.resource.data.animeId is int
+        && request.resource.data.animeId > 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() >= 2
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.poster is string
+        && request.resource.data.poster.size() <= 1000
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt == request.time
+        && (!exists(/databases/$(database)/documents/anime/$(request.resource.data.animeId))
+          || get(/databases/$(database)/documents/anime/$(request.resource.data.animeId)).data.get('episodeCount', 0) == 0);
+      allow update, delete: if isAdmin();
+    }
+
+    // One count per authenticated visitor UID. Only admins can read the source documents.
+    match /siteVisits/{uid} {
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['firstVisitedAt'])
+        && request.resource.data.firstVisitedAt == request.time;
+      allow get: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow list: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // v17.4: admin-only settings (saved server patterns) and the admin activity log.
+    match /adminConfig/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /adminLog/{logId} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // v17.4: "watching now". One small document per visitor, rewritten while the tab is open.
+    // A visitor can only write their own; only admins can read them.
+    match /presence/{uid} {
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['lastSeen'])
+        && request.resource.data.lastSeen == request.time;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow get, list: if isAdmin();
+    }
+
+    // v17.4: total visit counter (one +1 per browser session). Only admins can read it.
+    match /siteStats/{docId} {
+      allow get: if isAdmin();
+      allow create: if docId == 'visits' && request.auth != null
+        && request.resource.data.keys().hasOnly(['total'])
+        && request.resource.data.total == 1;
+      allow update: if docId == 'visits' && request.auth != null
+        && request.resource.data.keys().hasOnly(['total'])
+        && request.resource.data.total == resource.data.total + 1;
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+.output
+.netlify
+.wrangler
+.tanstack
+dist
+.env
+.env.local
+*.log
+.firebase
