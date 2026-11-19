@@ -1,0 +1,3561 @@
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000..ab5b379
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,10 @@
++# Firebase web app config (Firebase console → Project settings → Your apps → Web app).
++# These identify your project and are safe to ship to the browser; security comes from
++# Firebase Authentication + firestore.rules. Never put admin passwords or service-account
++# keys here.
++VITE_FIREBASE_API_KEY=
++VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
++VITE_FIREBASE_PROJECT_ID=your-project
++VITE_FIREBASE_APP_ID=
++VITE_FIREBASE_STORAGE_BUCKET=
++VITE_FIREBASE_MESSAGING_SENDER_ID=
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..424e070
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,10 @@
++node_modules
++.output
++.netlify
++.wrangler
++.tanstack
++dist
++.env
++.env.local
++*.log
++.firebase
+diff --git a/FIREBASE_SETUP.md b/FIREBASE_SETUP.md
+new file mode 100644
+index 0000000..e247143
+--- /dev/null
++++ b/FIREBASE_SETUP.md
+@@ -0,0 +1,165 @@
++# Firebase + Netlify setup (step by step)
++
++This connects TYSHI ZONE to Firebase so you can add anime and SUB/DUB episode links
++from `/admin`. Changes are live for every visitor right away — **no redeploy needed**
++after the one-time setup below.
++
++You need: a Google account, access to your Netlify site, and about 15 minutes.
++
++---
++
++## 1. Create a Firebase project
++
++1. Go to <https://console.firebase.google.com> and click **Create a project** (or **Add project**).
++2. Give it a name (for example `tyshi-zone`). Google Analytics is optional — you can turn it off.
++3. Wait for it to finish, then click **Continue**.
++
++## 2. Register the website ("web app")
++
++1. On the project overview page click the **`</>` (Web)** icon.
++2. Nickname: `tyshi-zone-web`. Leave "Firebase Hosting" **unchecked** (you use Netlify).
++3. Click **Register app**. Firebase shows a code block with `const firebaseConfig = { ... }`.
++4. Keep this page open — you'll copy these values in step 6:
++
++| firebaseConfig field | Environment variable              |
++| -------------------- | --------------------------------- |
++| `apiKey`             | `VITE_FIREBASE_API_KEY`           |
++| `authDomain`         | `VITE_FIREBASE_AUTH_DOMAIN`       |
++| `projectId`          | `VITE_FIREBASE_PROJECT_ID`        |
++| `appId`              | `VITE_FIREBASE_APP_ID`            |
++| `storageBucket`      | `VITE_FIREBASE_STORAGE_BUCKET`    |
++| `messagingSenderId`  | `VITE_FIREBASE_MESSAGING_SENDER_ID` |
++
++> These values are **not passwords**. Every Firebase website ships them to the browser.
++> What protects your data is Firebase Authentication + the security rules in step 5.
++> Never put your admin password or a "service account" JSON file in the code or in Netlify.
++
++You can find them again later under **Project settings (gear icon) → General → Your apps**.
++
++## 3. Turn on Firestore (the database)
++
++1. Left menu: **Build → Firestore Database → Create database**.
++2. Pick a location close to your viewers (it can't be changed later).
++3. Choose **Start in production mode** and click **Create**.
++
++## 4. Turn on sign-in and create your admin account
++
++1. Left menu: **Build → Authentication → Get started**.
++2. **Sign-in method** tab → **Email/Password** → enable the first switch → **Save**.
++3. **Users** tab → **Add user** → enter your email and a strong password → **Add user**.
++4. In the users list, copy the **User UID** of that account (a long code like `Xy12Ab…`).
++
++Recommended: in **Authentication → Settings → User actions**, turn off **Enable create
++(sign-up)** so nobody else can create accounts. (Even if they could, they wouldn't be admins.)
++
++Then make yourself an admin:
++
++1. Go to **Firestore Database → Data → Start collection**.
++2. Collection ID: `admins` → **Next**.
++3. Document ID: paste your **User UID** (exactly).
++4. Add one field, e.g. `name` (string) = `me`, and click **Save**.
++
++Only accounts with a document in `admins` can change content. To add another admin later,
++create their user in Authentication and add their UID to `admins` the same way. To remove
++an admin, delete their document.
++
++## 5. Publish the security rules
++
++1. **Firestore Database → Rules** tab.
++2. Delete everything in the editor and paste the full contents of [`firestore.rules`](./firestore.rules) from this project.
++3. Click **Publish**.
++
++What the rules do:
++
++- Anyone can **read** `anime` and `episodeLists` (needed to watch).
++- Only signed-in admins (UID in `admins`) can **write**, and only in the expected format.
++- Nobody can create or change `admins` from the website — only you, in the console.
++- Everything else is blocked.
++
++## 6. Add the environment variables to Netlify
++
++1. Open your site at <https://app.netlify.com> → **Site configuration → Environment variables**.
++2. Click **Add a variable → Add a single variable** for each row in the table in step 2
++   (for example key `VITE_FIREBASE_API_KEY`, value = your `apiKey`). Keep the default
++   "same value for all deploy contexts".
++3. Go to **Deploys → Trigger deploy → Deploy site** (or push a commit). This one deploy is
++   needed because `VITE_` variables are built into the site.
++
++Nothing else in `netlify.toml` needs to change (build command `bun run build`, publish `dist`).
++
++## 7. Allow your domain to sign in
++
++**Authentication → Settings → Authorized domains → Add domain** and add your Netlify
++domain (e.g. `your-site.netlify.app`) and any custom domain. `localhost` is already listed.
++
++## 8. Add content
++
++1. Open `https://your-site.netlify.app/admin` and sign in with the account from step 4.
++   - If it says *"signed in but not an admin"*, it shows your UID — check that the
++     `admins` document ID matches it exactly.
++2. **Choose an anime**: search by name or type the AniList ID (the number in your site's
++   `/anime/ID` address).
++3. **Import SUB links** and **Import DUB links** are separate boxes:
++   - Choose a `.txt` file or paste links — one per line, in episode order.
++   - Accepted formats per line:
++     ```
++     https://player.example/embed/abc
++     <iframe src="https://player.example/embed/abc" allowfullscreen></iframe>
++     Episode 5 | https://player.example/embed/abc
++     5. https://player.example/embed/abc
++     ```
++   - **Numbering**: "In order" numbers the first link as the start number (default 1),
++     the next as +1, and so on. If every line has an episode number ("Episode 5 | …"),
++     those numbers are used automatically.
++   - Check the **preview table** (episode number, host, status) and press **Preview** on
++     any row to test-play it before saving.
++   - Existing links of the same language are kept unless you tick **Replace existing**.
++   - Saving SUB never changes DUB links, and saving DUB never changes SUB links.
++4. Use **Episodes in Firestore** to add one episode by hand, edit, remove only the SUB or
++   DUB link, or delete an episode.
++
++Viewers see a **SUB / DUB** switch on the watch page when an episode has both. Their choice
++is remembered. Titles with episodes appear in an **Available to watch** row on the home page.
++
++Episodes that were saved only in a browser (the old `/anime/:id/edit` page) still work in
++that browser. To share them with everyone, open `/admin` in that same browser and use
++**Use episodes saved in this browser** in the SUB or DUB box.
++
++---
++
++## Local development (optional)
++
++```bash
++cp .env.example .env     # then fill in the values from step 2
++bun install
++bun run dev              # open http://localhost:3000/admin  (port may differ)
++```
++
++`.env` is git-ignored — don't commit it.
++
++To test against local emulators instead of your real project, install the Firebase CLI,
++run `firebase emulators:start --only firestore,auth --project demo-tyshi`, and set
++`VITE_FIREBASE_USE_EMULATOR=true` with `VITE_FIREBASE_PROJECT_ID=demo-tyshi`.
++
++## Troubleshooting
++
++| Message / problem | Fix |
++| --- | --- |
++| Admin page says "Firebase isn't configured" | The `VITE_FIREBASE_*` variables are missing. Add them in Netlify and redeploy. |
++| "auth/unauthorized-domain" or sign-in popup errors | Add your domain in step 7. |
++| "You don't have permission…" when saving | Your UID isn't in `admins`, or the rules from step 5 weren't published. |
++| Episodes don't appear | Check the AniList ID matches the anime page URL, and that each episode has a SUB or DUB link. |
++| A link plays on its host site but not here | Some hosts block embedding on other sites. Use the host's *embed* link or iframe code. |
++| "too many links for one Firestore document" | One title holds roughly 5,000+ long links. Split very long series by season (separate AniList IDs). |
++
++## Firestore data layout (for reference)
++
++```
++admins/{uid}                 { name }                         ← created by you in the console
++anime/{anilistId}            { anilistId, title, poster, episodeCount, subCount, dubCount, updatedAt }
++episodeLists/{anilistId}     { anilistId, updatedAt,
++                               episodes: { "1": { subUrl, dubUrl, title?, thumbnail? }, "2": {…} } }
++```
++
++All episodes of a title live in one document, so opening a watch page costs one read
++(Firebase's free Spark plan includes 50,000 reads per day).
+diff --git a/README.md b/README.md
+index 69d47c8..2af577e 100644
+--- a/README.md
++++ b/README.md
+@@ -19,9 +19,16 @@ A clean video-watching platform.
+ ### Data (all in this browser's localStorage)
+ 
+ - `tyshi-videos-v1`: episodes (`url`, `title`, `episode`, optional `thumbnail`) and personal videos with optional `seriesName` / `seriesLogo`. Older records remain compatible. No accounts or shared library were added; clearing browser storage removes this library, so export backups first.
+-- `tyshi-progress-v1`: resume positions / history. `tyshi-prefs-v1`: auto-play next. The watchlist key is unchanged.
++- `tyshi-progress-v1`: resume positions / history. `tyshi-prefs-v1`: auto-play next and SUB/DUB choice. The watchlist key is unchanged.
+ - Anime discovery data comes from the public AniList API.
+ 
++### Shared episodes with Firebase (optional)
++
++- **Admin** (`/admin`): sign in with Firebase Authentication to pick an anime and import **SUB** and **DUB** links from separate TXT files or pasted text. Links keep their order and map to episode numbers (in order from a start number, or from `Episode 5 | url` lines). A preview table and test player are shown before saving, and saving one language never changes the other. Single episodes can also be added, edited or removed.
++- Episodes are stored in Firestore (`anime`, `episodeLists`) and shown to every visitor instantly — no redeploy. The watch page shows a **SUB / DUB** switch when both exist; the player itself is unchanged and still accepts iframe/embed links. When Firestore and this browser both have the same episode number, the Firestore one is used.
++- Without the `VITE_FIREBASE_*` variables the site works exactly as before (browser-only episodes).
++- Setup: see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md). Security rules: [`firestore.rules`](./firestore.rules). Variables: [`.env.example`](./.env.example).
++
+ ### Netlify deployment
+ 
+ `netlify.toml` publishes `dist`, matching the installed Nitro Netlify preset. Server output is generated separately in `.netlify/functions-internal`; neither `dist/client` nor `dist/public` is the publish path for this preset version.
+diff --git a/bun.lock b/bun.lock
+index 850a375..a07b490 100644
+--- a/bun.lock
++++ b/bun.lock
+@@ -42,6 +42,7 @@
+         "cmdk": "^1.1.1",
+         "date-fns": "^4.1.0",
+         "embla-carousel-react": "^8.6.0",
++        "firebase": "^11.10.0",
+         "input-otp": "^1.4.2",
+         "lucide-react": "^0.575.0",
+         "react": "^19.2.0",
+@@ -146,6 +147,94 @@
+ 
+     "@eslint/plugin-kit": ["@eslint/plugin-kit@0.4.1", "", { "dependencies": { "@eslint/core": "^0.17.0", "levn": "^0.4.1" } }, "sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA=="],
+ 
++    "@firebase/ai": ["@firebase/ai@1.4.1", "", { "dependencies": { "@firebase/app-check-interop-types": "0.3.3", "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x", "@firebase/app-types": "0.x" } }, "sha512-bcusQfA/tHjUjBTnMx6jdoPMpDl3r8K15Z+snHz9wq0Foox0F/V+kNLXucEOHoTL2hTc9l+onZCyBJs2QoIC3g=="],
++
++    "@firebase/analytics": ["@firebase/analytics@0.10.17", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/installations": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-n5vfBbvzduMou/2cqsnKrIes4auaBjdhg8QNA2ZQZ59QgtO2QiwBaXQZQE4O4sgB0Ds1tvLgUUkY+pwzu6/xEg=="],
++
++    "@firebase/analytics-compat": ["@firebase/analytics-compat@0.2.23", "", { "dependencies": { "@firebase/analytics": "0.10.17", "@firebase/analytics-types": "0.8.3", "@firebase/component": "0.6.18", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-3AdO10RN18G5AzREPoFgYhW6vWXr3u+OYQv6pl3CX6Fky8QRk0AHurZlY3Q1xkXO0TDxIsdhO3y65HF7PBOJDw=="],
++
++    "@firebase/analytics-types": ["@firebase/analytics-types@0.8.3", "", {}, "sha512-VrIp/d8iq2g501qO46uGz3hjbDb8xzYMrbu8Tp0ovzIzrvJZ2fvmj649gTjge/b7cCCcjT0H37g1gVtlNhnkbg=="],
++
++    "@firebase/app": ["@firebase/app@0.13.2", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "idb": "7.1.1", "tslib": "^2.1.0" } }, "sha512-jwtMmJa1BXXDCiDx1vC6SFN/+HfYG53UkfJa6qeN5ogvOunzbFDO3wISZy5n9xgYFUrEP6M7e8EG++riHNTv9w=="],
++
++    "@firebase/app-check": ["@firebase/app-check@0.10.1", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-MgNdlms9Qb0oSny87pwpjKush9qUwCJhfmTJHDfrcKo4neLGiSeVE4qJkzP7EQTIUFKp84pbTxobSAXkiuQVYQ=="],
++
++    "@firebase/app-check-compat": ["@firebase/app-check-compat@0.3.26", "", { "dependencies": { "@firebase/app-check": "0.10.1", "@firebase/app-check-types": "0.5.3", "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-PkX+XJMLDea6nmnopzFKlr+s2LMQGqdyT2DHdbx1v1dPSqOol2YzgpgymmhC67vitXVpNvS3m/AiWQWWhhRRPQ=="],
++
++    "@firebase/app-check-interop-types": ["@firebase/app-check-interop-types@0.3.3", "", {}, "sha512-gAlxfPLT2j8bTI/qfe3ahl2I2YcBQ8cFIBdhAQA4I2f3TndcO+22YizyGYuttLHPQEpWkhmpFW60VCFEPg4g5A=="],
++
++    "@firebase/app-check-types": ["@firebase/app-check-types@0.5.3", "", {}, "sha512-hyl5rKSj0QmwPdsAxrI5x1otDlByQ7bvNvVt8G/XPO2CSwE++rmSVf3VEhaeOR4J8ZFaF0Z0NDSmLejPweZ3ng=="],
++
++    "@firebase/app-compat": ["@firebase/app-compat@0.4.2", "", { "dependencies": { "@firebase/app": "0.13.2", "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" } }, "sha512-LssbyKHlwLeiV8GBATyOyjmHcMpX/tFjzRUCS1jnwGAew1VsBB4fJowyS5Ud5LdFbYpJeS+IQoC+RQxpK7eH3Q=="],
++
++    "@firebase/app-types": ["@firebase/app-types@0.9.3", "", {}, "sha512-kRVpIl4vVGJ4baogMDINbyrIOtOxqhkZQg4jTq3l8Lw6WSk0xfpEYzezFu+Kl4ve4fbPl79dvwRtaFqAC/ucCw=="],
++
++    "@firebase/auth": ["@firebase/auth@1.10.8", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x", "@react-native-async-storage/async-storage": "^1.18.1" }, "optionalPeers": ["@react-native-async-storage/async-storage"] }, "sha512-GpuTz5ap8zumr/ocnPY57ZanX02COsXloY6Y/2LYPAuXYiaJRf6BAGDEdRq1BMjP93kqQnKNuKZUTMZbQ8MNYA=="],
++
++    "@firebase/auth-compat": ["@firebase/auth-compat@0.5.28", "", { "dependencies": { "@firebase/auth": "1.10.8", "@firebase/auth-types": "0.13.0", "@firebase/component": "0.6.18", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-HpMSo/cc6Y8IX7bkRIaPPqT//Jt83iWy5rmDWeThXQCAImstkdNo3giFLORJwrZw2ptiGkOij64EH1ztNJzc7Q=="],
++
++    "@firebase/auth-interop-types": ["@firebase/auth-interop-types@0.2.4", "", {}, "sha512-JPgcXKCuO+CWqGDnigBtvo09HeBs5u/Ktc2GaFj2m01hLarbxthLNm7Fk8iOP1aqAtXV+fnnGj7U28xmk7IwVA=="],
++
++    "@firebase/auth-types": ["@firebase/auth-types@0.13.0", "", { "peerDependencies": { "@firebase/app-types": "0.x", "@firebase/util": "1.x" } }, "sha512-S/PuIjni0AQRLF+l9ck0YpsMOdE8GO2KU6ubmBB7P+7TJUCQDa3R1dlgYm9UzGbbePMZsp0xzB93f2b/CgxMOg=="],
++
++    "@firebase/component": ["@firebase/component@0.6.18", "", { "dependencies": { "@firebase/util": "1.12.1", "tslib": "^2.1.0" } }, "sha512-n28kPCkE2dL2U28fSxZJjzPPVpKsQminJ6NrzcKXAI0E/lYC8YhfwpyllScqVEvAI3J2QgJZWYgrX+1qGI+SQQ=="],
++
++    "@firebase/data-connect": ["@firebase/data-connect@0.3.10", "", { "dependencies": { "@firebase/auth-interop-types": "0.2.4", "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-VMVk7zxIkgwlVQIWHOKFahmleIjiVFwFOjmakXPd/LDgaB/5vzwsB5DWIYo+3KhGxWpidQlR8geCIn39YflJIQ=="],
++
++    "@firebase/database": ["@firebase/database@1.0.20", "", { "dependencies": { "@firebase/app-check-interop-types": "0.3.3", "@firebase/auth-interop-types": "0.2.4", "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "faye-websocket": "0.11.4", "tslib": "^2.1.0" } }, "sha512-H9Rpj1pQ1yc9+4HQOotFGLxqAXwOzCHsRSRjcQFNOr8lhUt6LeYjf0NSRL04sc4X0dWe8DsCvYKxMYvFG/iOJw=="],
++
++    "@firebase/database-compat": ["@firebase/database-compat@2.0.11", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/database": "1.0.20", "@firebase/database-types": "1.0.15", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" } }, "sha512-itEsHARSsYS95+udF/TtIzNeQ0Uhx4uIna0sk4E0wQJBUnLc/G1X6D7oRljoOuwwCezRLGvWBRyNrugv/esOEw=="],
++
++    "@firebase/database-types": ["@firebase/database-types@1.0.15", "", { "dependencies": { "@firebase/app-types": "0.9.3", "@firebase/util": "1.12.1" } }, "sha512-XWHJ0VUJ0k2E9HDMlKxlgy/ZuTa9EvHCGLjaKSUvrQnwhgZuRU5N3yX6SZ+ftf2hTzZmfRkv+b3QRvGg40bKNw=="],
++
++    "@firebase/firestore": ["@firebase/firestore@4.8.0", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "@firebase/webchannel-wrapper": "1.0.3", "@grpc/grpc-js": "~1.9.0", "@grpc/proto-loader": "^0.7.8", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-QSRk+Q1/CaabKyqn3C32KSFiOdZpSqI9rpLK5BHPcooElumOBooPFa6YkDdiT+/KhJtel36LdAacha9BptMj2A=="],
++
++    "@firebase/firestore-compat": ["@firebase/firestore-compat@0.3.53", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/firestore": "4.8.0", "@firebase/firestore-types": "3.0.3", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-qI3yZL8ljwAYWrTousWYbemay2YZa+udLWugjdjju2KODWtLG94DfO4NALJgPLv8CVGcDHNFXoyQexdRA0Cz8Q=="],
++
++    "@firebase/firestore-types": ["@firebase/firestore-types@3.0.3", "", { "peerDependencies": { "@firebase/app-types": "0.x", "@firebase/util": "1.x" } }, "sha512-hD2jGdiWRxB/eZWF89xcK9gF8wvENDJkzpVFb4aGkzfEaKxVRD1kjz1t1Wj8VZEp2LCB53Yx1zD8mrhQu87R6Q=="],
++
++    "@firebase/functions": ["@firebase/functions@0.12.9", "", { "dependencies": { "@firebase/app-check-interop-types": "0.3.3", "@firebase/auth-interop-types": "0.2.4", "@firebase/component": "0.6.18", "@firebase/messaging-interop-types": "0.2.3", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-FG95w6vjbUXN84Ehezc2SDjGmGq225UYbHrb/ptkRT7OTuCiQRErOQuyt1jI1tvcDekdNog+anIObihNFz79Lg=="],
++
++    "@firebase/functions-compat": ["@firebase/functions-compat@0.3.26", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/functions": "0.12.9", "@firebase/functions-types": "0.6.3", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-A798/6ff5LcG2LTWqaGazbFYnjBW8zc65YfID/en83ALmkhu2b0G8ykvQnLtakbV9ajrMYPn7Yc/XcYsZIUsjA=="],
++
++    "@firebase/functions-types": ["@firebase/functions-types@0.6.3", "", {}, "sha512-EZoDKQLUHFKNx6VLipQwrSMh01A1SaL3Wg6Hpi//x6/fJ6Ee4hrAeswK99I5Ht8roiniKHw4iO0B1Oxj5I4plg=="],
++
++    "@firebase/installations": ["@firebase/installations@0.6.18", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/util": "1.12.1", "idb": "7.1.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-NQ86uGAcvO8nBRwVltRL9QQ4Reidc/3whdAasgeWCPIcrhOKDuNpAALa6eCVryLnK14ua2DqekCOX5uC9XbU/A=="],
++
++    "@firebase/installations-compat": ["@firebase/installations-compat@0.2.18", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/installations": "0.6.18", "@firebase/installations-types": "0.5.3", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-aLFohRpJO5kKBL/XYL4tN+GdwEB/Q6Vo9eZOM/6Kic7asSUgmSfGPpGUZO1OAaSRGwF4Lqnvi1f/f9VZnKzChw=="],
++
++    "@firebase/installations-types": ["@firebase/installations-types@0.5.3", "", { "peerDependencies": { "@firebase/app-types": "0.x" } }, "sha512-2FJI7gkLqIE0iYsNQ1P751lO3hER+Umykel+TkLwHj6plzWVxqvfclPUZhcKFVQObqloEBTmpi2Ozn7EkCABAA=="],
++
++    "@firebase/logger": ["@firebase/logger@0.4.4", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-mH0PEh1zoXGnaR8gD1DeGeNZtWFKbnz9hDO91dIml3iou1gpOnLqXQ2dJfB71dj6dpmUjcQ6phY3ZZJbjErr9g=="],
++
++    "@firebase/messaging": ["@firebase/messaging@0.12.22", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/installations": "0.6.18", "@firebase/messaging-interop-types": "0.2.3", "@firebase/util": "1.12.1", "idb": "7.1.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-GJcrPLc+Hu7nk+XQ70Okt3M1u1eRr2ZvpMbzbc54oTPJZySHcX9ccZGVFcsZbSZ6o1uqumm8Oc7OFkD3Rn1/og=="],
++
++    "@firebase/messaging-compat": ["@firebase/messaging-compat@0.2.22", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/messaging": "0.12.22", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-5ZHtRnj6YO6f/QPa/KU6gryjmX4Kg33Kn4gRpNU6M1K47Gm8kcQwPkX7erRUYEH1mIWptfvjvXMHWoZaWjkU7A=="],
++
++    "@firebase/messaging-interop-types": ["@firebase/messaging-interop-types@0.2.3", "", {}, "sha512-xfzFaJpzcmtDjycpDeCUj0Ge10ATFi/VHVIvEEjDNc3hodVBQADZ7BWQU7CuFpjSHE+eLuBI13z5F/9xOoGX8Q=="],
++
++    "@firebase/performance": ["@firebase/performance@0.7.7", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/installations": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0", "web-vitals": "^4.2.4" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-JTlTQNZKAd4+Q5sodpw6CN+6NmwbY72av3Lb6wUKTsL7rb3cuBIhQSrslWbVz0SwK3x0ZNcqX24qtRbwKiv+6w=="],
++
++    "@firebase/performance-compat": ["@firebase/performance-compat@0.2.20", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/performance": "0.7.7", "@firebase/performance-types": "0.2.3", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-XkFK5NmOKCBuqOKWeRgBUFZZGz9SzdTZp4OqeUg+5nyjapTiZ4XoiiUL8z7mB2q+63rPmBl7msv682J3rcDXIQ=="],
++
++    "@firebase/performance-types": ["@firebase/performance-types@0.2.3", "", {}, "sha512-IgkyTz6QZVPAq8GSkLYJvwSLr3LS9+V6vNPQr0x4YozZJiLF5jYixj0amDtATf1X0EtYHqoPO48a9ija8GocxQ=="],
++
++    "@firebase/remote-config": ["@firebase/remote-config@0.6.5", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/installations": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-fU0c8HY0vrVHwC+zQ/fpXSqHyDMuuuglV94VF6Yonhz8Fg2J+KOowPGANM0SZkLvVOYpTeWp3ZmM+F6NjwWLnw=="],
++
++    "@firebase/remote-config-compat": ["@firebase/remote-config-compat@0.2.18", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/logger": "0.4.4", "@firebase/remote-config": "0.6.5", "@firebase/remote-config-types": "0.4.0", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-YiETpldhDy7zUrnS8e+3l7cNs0sL7+tVAxvVYU0lu7O+qLHbmdtAxmgY+wJqWdW2c9nDvBFec7QiF58pEUu0qQ=="],
++
++    "@firebase/remote-config-types": ["@firebase/remote-config-types@0.4.0", "", {}, "sha512-7p3mRE/ldCNYt8fmWMQ/MSGRmXYlJ15Rvs9Rk17t8p0WwZDbeK7eRmoI1tvCPaDzn9Oqh+yD6Lw+sGLsLg4kKg=="],
++
++    "@firebase/storage": ["@firebase/storage@0.13.14", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app": "0.x" } }, "sha512-xTq5ixxORzx+bfqCpsh+o3fxOsGoDjC1nO0Mq2+KsOcny3l7beyBhP/y1u5T6mgsFQwI1j6oAkbT5cWdDBx87g=="],
++
++    "@firebase/storage-compat": ["@firebase/storage-compat@0.3.24", "", { "dependencies": { "@firebase/component": "0.6.18", "@firebase/storage": "0.13.14", "@firebase/storage-types": "0.8.3", "@firebase/util": "1.12.1", "tslib": "^2.1.0" }, "peerDependencies": { "@firebase/app-compat": "0.x" } }, "sha512-XHn2tLniiP7BFKJaPZ0P8YQXKiVJX+bMyE2j2YWjYfaddqiJnROJYqSomwW6L3Y+gZAga35ONXUJQju6MB6SOQ=="],
++
++    "@firebase/storage-types": ["@firebase/storage-types@0.8.3", "", { "peerDependencies": { "@firebase/app-types": "0.x", "@firebase/util": "1.x" } }, "sha512-+Muk7g9uwngTpd8xn9OdF/D48uiQ7I1Fae7ULsWPuKoCH3HU7bfFPhxtJYzyhjdniowhuDpQcfPmuNRAqZEfvg=="],
++
++    "@firebase/util": ["@firebase/util@1.12.1", "", { "dependencies": { "tslib": "^2.1.0" } }, "sha512-zGlBn/9Dnya5ta9bX/fgEoNC3Cp8s6h+uYPYaDieZsFOAdHP/ExzQ/eaDgxD3GOROdPkLKpvKY0iIzr9adle0w=="],
++
++    "@firebase/webchannel-wrapper": ["@firebase/webchannel-wrapper@1.0.3", "", {}, "sha512-2xCRM9q9FlzGZCdgDMJwc0gyUkWFtkosy7Xxr6sFgQwn+wMNIWd7xIvYNauU1r64B5L5rsGKy/n9TKJ0aAFeqQ=="],
++
+     "@floating-ui/core": ["@floating-ui/core@1.8.0", "", { "dependencies": { "@floating-ui/utils": "^0.2.12" } }, "sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ=="],
+ 
+     "@floating-ui/dom": ["@floating-ui/dom@1.8.0", "", { "dependencies": { "@floating-ui/core": "^1.8.0", "@floating-ui/utils": "^0.2.12" } }, "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg=="],
+@@ -154,6 +243,10 @@
+ 
+     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
+ 
++    "@grpc/grpc-js": ["@grpc/grpc-js@1.9.16", "", { "dependencies": { "@grpc/proto-loader": "^0.7.8", "@types/node": ">=12.12.47" } }, "sha512-wE4Ut/olIzfKqp631XrG+wbF0v1vWFN4YL9FyXC2LJiG33DsV7PLzURjrCvY/6je2ntdRkeLpPDluzSRGaVltQ=="],
++
++    "@grpc/proto-loader": ["@grpc/proto-loader@0.7.15", "", { "dependencies": { "lodash.camelcase": "^4.3.0", "long": "^5.0.0", "protobufjs": "^7.2.5", "yargs": "^17.7.2" }, "bin": { "proto-loader-gen-types": "build/bin/proto-loader-gen-types.js" } }, "sha512-tMXdRCfYVixjuFK+Hk0Q1s38gV9zDiDJfWL3h1rv4Qc39oILCu1TRTDt7+fGUI8K4G1Fj125Hx/ru3azECWTyQ=="],
++
+     "@hookform/resolvers": ["@hookform/resolvers@5.5.7", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "@sinclair/typebox": ">=0.25.24", "@standard-schema/spec": "^1.0.0", "@typeschema/main": ">=0.13.7", "@vinejs/vine": "^2.0.0 || ^3.0.0", "ajv": "^8.12.0", "ajv-errors": "^3.0.0", "ajv-formats": "^2.1.1", "arktype": "^2.0.0", "ata-validator": "^0.7.0", "class-transformer": ">=0.4.0", "class-validator": ">=0.12.0", "computed-types": "^1.0.0", "effect": "^3.10.3", "fluentvalidation-ts": "^3.0.0", "fp-ts": "^2.7.0", "io-ts": "^2.0.0", "joi": "^17.0.0", "nope-validator": ">=0.12.0", "react-hook-form": "^7.55.0", "superstruct": ">=0.12.0", "typanion": "^3.3.2", "valibot": ">=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc", "vest": ">=3.0.0", "yup": "^1.0.0", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["@sinclair/typebox", "@standard-schema/spec", "@typeschema/main", "@vinejs/vine", "ajv", "ajv-errors", "ajv-formats", "arktype", "ata-validator", "class-transformer", "class-validator", "computed-types", "effect", "fluentvalidation-ts", "fp-ts", "io-ts", "joi", "nope-validator", "superstruct", "typanion", "valibot", "vest", "yup", "zod"] }, "sha512-CyPCYV8/KlXfEXLWj8HHHhVsR/IZ6Ckm3b/a4fWtO/lRnRK1huqncb8LlAWrmpPRsse5glF5aVuDRMHEr3UGag=="],
+ 
+     "@humanfs/core": ["@humanfs/core@0.19.2", "", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
+@@ -236,6 +329,24 @@
+ 
+     "@pkgr/core": ["@pkgr/core@0.3.6", "", {}, "sha512-SEeaJLb3qBNF/OaXnaR1NmmBbFYk1zC0ZH/52fATcRPLFg/p791YrcyFFy44Bo9sLaGuSuLp5Q6axbb/O+v/RA=="],
+ 
++    "@protobufjs/aspromise": ["@protobufjs/aspromise@1.1.2", "", {}, "sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ=="],
++
++    "@protobufjs/base64": ["@protobufjs/base64@1.1.2", "", {}, "sha512-AZkcAA5vnN/v4PDqKyMR5lx7hZttPDgClv83E//FMNhR2TMcLUhfRUBHCmSl0oi9zMgDDqRUJkSxO3wm85+XLg=="],
++
++    "@protobufjs/codegen": ["@protobufjs/codegen@2.0.5", "", {}, "sha512-zgXFLzW3Ap33e6d0Wlj4MGIm6Ce8O89n/apUaGNB/jx+hw+ruWEp7EwGUshdLKVRCxZW12fp9r40E1mQrf/34g=="],
++
++    "@protobufjs/eventemitter": ["@protobufjs/eventemitter@1.1.1", "", {}, "sha512-vW1GmwMZNnL+gMRaovlh9yZX74kc+TTU3FObkkurpMaRtBfLP3ldjS9KQWlwZgraRE0+dheEEoAxdzcJQ8eXZg=="],
++
++    "@protobufjs/fetch": ["@protobufjs/fetch@1.1.1", "", { "dependencies": { "@protobufjs/aspromise": "^1.1.1" } }, "sha512-GpptLrs57adMSuHi3VNj0mAF8dwh36LMaYF6XyJ6JMWlVsc+t42tm1HSEDmOs3A8fC9yyeisgLhsTVQokOZ0zw=="],
++
++    "@protobufjs/float": ["@protobufjs/float@1.0.2", "", {}, "sha512-Ddb+kVXlXst9d+R9PfTIxh1EdNkgoRe5tOX6t01f1lYWOvJnSPDBlG241QLzcyPdoNTsblLUdujGSE4RzrTZGQ=="],
++
++    "@protobufjs/path": ["@protobufjs/path@1.1.2", "", {}, "sha512-6JOcJ5Tm08dOHAbdR3GrvP+yUUfkjG5ePsHYczMFLq3ZmMkAD98cDgcT2iA1lJ9NVwFd4tH/iSSoe44YWkltEA=="],
++
++    "@protobufjs/pool": ["@protobufjs/pool@1.1.0", "", {}, "sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw=="],
++
++    "@protobufjs/utf8": ["@protobufjs/utf8@1.1.2", "", {}, "sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug=="],
++
+     "@radix-ui/number": ["@radix-ui/number@1.1.3", "", {}, "sha512-Road2bidD0uu/1BGDOWNdPI06g0lIRy6IF9GZcIrDK2KGItfor8IQwQa+yM2ERgHM1MmHxaxpTzk0/Jp42lNfA=="],
+ 
+     "@radix-ui/primitive": ["@radix-ui/primitive@1.1.7", "", {}, "sha512-rqWnm76nYT8HoNNqEjpgJ7Pw/DrBj5iBTrmEPo6HTX5+VJyBNOqTdv4g89G63HuR5g0AaENoAcH7Is5fF2kZ8Q=="],
+@@ -524,6 +635,8 @@
+ 
+     "ajv": ["ajv@6.15.0", "", { "dependencies": { "fast-deep-equal": "^3.1.1", "fast-json-stable-stringify": "^2.0.0", "json-schema-traverse": "^0.4.1", "uri-js": "^4.2.2" } }, "sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw=="],
+ 
++    "ansi-regex": ["ansi-regex@5.0.1", "", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
++
+     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
+ 
+     "ansis": ["ansis@4.3.1", "", {}, "sha512-BJ8/l4R5LRE7hW9WdSuGYrLSHi2ynxeFpDFbH0K/CgNeY/tyhk+vO6TYxXC5r5CpUhNVX310xzPsN/H9lCdfOA=="],
+@@ -552,6 +665,8 @@
+ 
+     "class-variance-authority": ["class-variance-authority@0.7.1", "", { "dependencies": { "clsx": "^2.1.1" } }, "sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg=="],
+ 
++    "cliui": ["cliui@8.0.1", "", { "dependencies": { "string-width": "^4.2.0", "strip-ansi": "^6.0.1", "wrap-ansi": "^7.0.0" } }, "sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ=="],
++
+     "clsx": ["clsx@2.1.1", "", {}, "sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA=="],
+ 
+     "cmdk": ["cmdk@1.1.1", "", { "dependencies": { "@radix-ui/react-compose-refs": "^1.1.1", "@radix-ui/react-dialog": "^1.1.6", "@radix-ui/react-id": "^1.1.0", "@radix-ui/react-primitive": "^2.0.2" }, "peerDependencies": { "react": "^18 || ^19 || ^19.0.0-rc", "react-dom": "^18 || ^19 || ^19.0.0-rc" } }, "sha512-Vsv7kFaXm+ptHDMZ7izaRsP70GgrW9NBNGswt9OZaVBLlE0SNpDq8eu/VGXyF9r7M0azK3Wy7OlYXsuyYLFzHg=="],
+@@ -624,6 +739,8 @@
+ 
+     "embla-carousel-reactive-utils": ["embla-carousel-reactive-utils@8.6.0", "", { "peerDependencies": { "embla-carousel": "8.6.0" } }, "sha512-fMVUDUEx0/uIEDM0Mz3dHznDhfX+znCCDCeIophYb1QGVM7YThSWX+wz11zlYwWFOr74b4QLGg0hrGPJeG2s4A=="],
+ 
++    "emoji-regex": ["emoji-regex@8.0.0", "", {}, "sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A=="],
++
+     "enhanced-resolve": ["enhanced-resolve@5.24.4", "", { "dependencies": { "graceful-fs": "^4.2.4", "tapable": "^2.3.3" } }, "sha512-GVoi+ICHocoOIU7qVVM48wOJziRsqrsyqlI0Ce0LdowRn6v3bcH2zUa9kp85ncx0nwIb9/HOCOLS3fdThDG/XQ=="],
+ 
+     "env-runner": ["env-runner@0.1.16", "", { "dependencies": { "crossws": "^0.4.8", "exsolve": "^1.1.0", "httpxy": "^0.5.4", "srvx": "^0.11.19" }, "peerDependencies": { "@netlify/runtime": "^4.1.23", "@vercel/queue": ">=0.2.0", "miniflare": "^4.20260515.0", "wrangler": "^4.0.0" }, "optionalPeers": ["@netlify/runtime", "@vercel/queue", "miniflare", "wrangler"], "bin": { "env-runner": "dist/cli.mjs" } }, "sha512-2LRJM4P2KLX6J83QZZrMqvgCDt/D5ea7wPcI3yYiy5cG/9rX5QwdwZFx0D7ktWnjdRyZxYjttGGorb5nFqb1CA=="],
+@@ -670,6 +787,8 @@
+ 
+     "fast-levenshtein": ["fast-levenshtein@2.0.6", "", {}, "sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw=="],
+ 
++    "faye-websocket": ["faye-websocket@0.11.4", "", { "dependencies": { "websocket-driver": ">=0.5.1" } }, "sha512-CzbClwlXAuiRQAlUyfqPgvPoNKTckTPGfwZV4ZdAhVcP2lh9KUxJg2b5GkE7XbjKQ3YJnQ9z6D9ntLAlB+tP8g=="],
++
+     "fdir": ["fdir@6.5.0", "", { "peerDependencies": { "picomatch": "^3 || ^4" }, "optionalPeers": ["picomatch"] }, "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="],
+ 
+     "fetchdts": ["fetchdts@0.1.7", "", {}, "sha512-YoZjBdafyLIop9lSxXVI33oLD5kN31q4Td+CasofLLYeLXRFeOsuOw0Uo+XNRi9PZlbfdlN2GmRtm4tCEQ9/KA=="],
+@@ -678,6 +797,8 @@
+ 
+     "find-up": ["find-up@5.0.0", "", { "dependencies": { "locate-path": "^6.0.0", "path-exists": "^4.0.0" } }, "sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng=="],
+ 
++    "firebase": ["firebase@11.10.0", "", { "dependencies": { "@firebase/ai": "1.4.1", "@firebase/analytics": "0.10.17", "@firebase/analytics-compat": "0.2.23", "@firebase/app": "0.13.2", "@firebase/app-check": "0.10.1", "@firebase/app-check-compat": "0.3.26", "@firebase/app-compat": "0.4.2", "@firebase/app-types": "0.9.3", "@firebase/auth": "1.10.8", "@firebase/auth-compat": "0.5.28", "@firebase/data-connect": "0.3.10", "@firebase/database": "1.0.20", "@firebase/database-compat": "2.0.11", "@firebase/firestore": "4.8.0", "@firebase/firestore-compat": "0.3.53", "@firebase/functions": "0.12.9", "@firebase/functions-compat": "0.3.26", "@firebase/installations": "0.6.18", "@firebase/installations-compat": "0.2.18", "@firebase/messaging": "0.12.22", "@firebase/messaging-compat": "0.2.22", "@firebase/performance": "0.7.7", "@firebase/performance-compat": "0.2.20", "@firebase/remote-config": "0.6.5", "@firebase/remote-config-compat": "0.2.18", "@firebase/storage": "0.13.14", "@firebase/storage-compat": "0.3.24", "@firebase/util": "1.12.1" } }, "sha512-nKBXoDzF0DrXTBQJlZa+sbC5By99ysYU1D6PkMRYknm0nCW7rJly47q492Ht7Ndz5MeYSBuboKuhS1e6mFC03w=="],
++
+     "flat-cache": ["flat-cache@4.0.1", "", { "dependencies": { "flatted": "^3.2.9", "keyv": "^4.5.4" } }, "sha512-f7ccFPK3SXFHpx15UIGyRJ/FJQctuKZ0zVuN3frBo4HnK3cay9VEW0R6yPYFHC0AgqhukPzKjq22t5DmAyqGyw=="],
+ 
+     "flatted": ["flatted@3.4.3", "", {}, "sha512-/zipXxyO6rGvuNGDiULY9MvEGSkb2gaG4GGH4ygMi0ZZzyMHdUZBmntJmx5x1G2VuPytCwGN4xsJP6cw+sK+vQ=="],
+@@ -686,6 +807,8 @@
+ 
+     "gensync": ["gensync@1.0.0-beta.2", "", {}, "sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg=="],
+ 
++    "get-caller-file": ["get-caller-file@2.0.5", "", {}, "sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg=="],
++
+     "get-nonce": ["get-nonce@1.0.1", "", {}, "sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q=="],
+ 
+     "glob-parent": ["glob-parent@6.0.2", "", { "dependencies": { "is-glob": "^4.0.3" } }, "sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A=="],
+@@ -704,8 +827,12 @@
+ 
+     "hookable": ["hookable@6.1.1", "", {}, "sha512-U9LYDy1CwhMCnprUfeAZWZGByVbhd54hwepegYTK7Pi5NvqEj63ifz5z+xukznehT7i6NIZRu89Ay1AZmRsLEQ=="],
+ 
++    "http-parser-js": ["http-parser-js@0.5.10", "", {}, "sha512-Pysuw9XpUq5dVc/2SMHpuTY01RFl8fttgcyunjL7eEMhGM3cI4eOmiCycJDVCo/7O7ClfQD3SaI6ftDzqOXYMA=="],
++
+     "httpxy": ["httpxy@0.5.5", "", {}, "sha512-uDjmnPyp1q4Sgzf3w+J/Fc6UqcCEj0x4Wjp7OqK5dGhNeDgpyrAmnS6ey8QWrX3SWDon2DMKf9sBa5X9+CVyMA=="],
+ 
++    "idb": ["idb@7.1.1", "", {}, "sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ=="],
++
+     "ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
+ 
+     "import-fresh": ["import-fresh@3.3.1", "", { "dependencies": { "parent-module": "^1.0.0", "resolve-from": "^4.0.0" } }, "sha512-TR3KfrTZTYLPB6jUjfx6MF9WcWrHL9su5TObK4ZkYgBdWKPOFoSoQIdEuTuR82pmtxH2spWG9h6etwfr1pLBqQ=="],
+@@ -718,6 +845,8 @@
+ 
+     "is-extglob": ["is-extglob@2.1.1", "", {}, "sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ=="],
+ 
++    "is-fullwidth-code-point": ["is-fullwidth-code-point@3.0.0", "", {}, "sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg=="],
++
+     "is-glob": ["is-glob@4.0.3", "", { "dependencies": { "is-extglob": "^2.1.1" } }, "sha512-xelSayHH36ZgE7ZWhli7pW34hNbNl8Ojv5KVmkJD4hBdD3th8Tfk9vYasLM+mXWOZhFkgZfxhLSnrwRr4elSSg=="],
+ 
+     "isbot": ["isbot@5.2.1", "", {}, "sha512-dJ+LpKyClQZ7NG+j3OensC/mAZkGpukE9YUrgPYvAZj2doVL0edfDgywTUh5CXa0o+nW9a1V9e5+CJTX8+SxRw=="],
+@@ -774,8 +903,12 @@
+ 
+     "lodash": ["lodash@4.18.1", "", {}, "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q=="],
+ 
++    "lodash.camelcase": ["lodash.camelcase@4.3.0", "", {}, "sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA=="],
++
+     "lodash.merge": ["lodash.merge@4.6.2", "", {}, "sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ=="],
+ 
++    "long": ["long@5.3.2", "", {}, "sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA=="],
++
+     "loose-envify": ["loose-envify@1.4.0", "", { "dependencies": { "js-tokens": "^3.0.0 || ^4.0.0" }, "bin": { "loose-envify": "cli.js" } }, "sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q=="],
+ 
+     "lru-cache": ["lru-cache@5.1.1", "", { "dependencies": { "yallist": "^3.0.2" } }, "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w=="],
+@@ -836,6 +969,8 @@
+ 
+     "prop-types": ["prop-types@15.8.1", "", { "dependencies": { "loose-envify": "^1.4.0", "object-assign": "^4.1.1", "react-is": "^16.13.1" } }, "sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg=="],
+ 
++    "protobufjs": ["protobufjs@7.6.6", "", { "dependencies": { "@protobufjs/aspromise": "^1.1.2", "@protobufjs/base64": "^1.1.2", "@protobufjs/codegen": "^2.0.5", "@protobufjs/eventemitter": "^1.1.1", "@protobufjs/fetch": "^1.1.1", "@protobufjs/float": "^1.0.2", "@protobufjs/path": "^1.1.2", "@protobufjs/pool": "^1.1.0", "@protobufjs/utf8": "^1.1.1", "@types/node": ">=13.7.0", "long": "^5.3.2" } }, "sha512-dYDWdjSl5RNb7SgPxGQcRU+GtvP7s2fpkrY0r432PcOIaZ0/rBcxEZnQN67iJhFuQiVw754JDoPruPCNdGsbjg=="],
++
+     "punycode": ["punycode@2.3.1", "", {}, "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg=="],
+ 
+     "react": ["react@19.2.8", "", {}, "sha512-PWaYA1L/q9u2u7xYQi+Y3L3Yfnie7XyLeaJICV1MGD6LprsBxcAqGjYyr0eY3p+QdsA+x/Irkt4Qif8D63+Sbw=="],
+@@ -868,12 +1003,16 @@
+ 
+     "recharts-scale": ["recharts-scale@0.4.5", "", { "dependencies": { "decimal.js-light": "^2.4.1" } }, "sha512-kivNFO+0OcUNu7jQquLXAxz1FIwZj8nrj+YkOKc5694NbjCvcT6aSZiIzNzd2Kul4o4rTto8QVR9lMNtxD4G1w=="],
+ 
++    "require-directory": ["require-directory@2.1.1", "", {}, "sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q=="],
++
+     "resolve-from": ["resolve-from@4.0.0", "", {}, "sha512-pb/MYmXstAkysRFx8piNI1tGFNQIFA3vkE3Gq4EuA1dF6gHp/+vgZqsCGJapvy8N3Q+4o7FwvquPJcnZ7RYy4g=="],
+ 
+     "rolldown": ["rolldown@1.2.0", "", { "dependencies": { "@oxc-project/types": "=0.140.0", "@rolldown/pluginutils": "^1.0.0" }, "optionalDependencies": { "@rolldown/binding-android-arm64": "1.2.0", "@rolldown/binding-darwin-arm64": "1.2.0", "@rolldown/binding-darwin-x64": "1.2.0", "@rolldown/binding-freebsd-x64": "1.2.0", "@rolldown/binding-linux-arm-gnueabihf": "1.2.0", "@rolldown/binding-linux-arm64-gnu": "1.2.0", "@rolldown/binding-linux-arm64-musl": "1.2.0", "@rolldown/binding-linux-ppc64-gnu": "1.2.0", "@rolldown/binding-linux-s390x-gnu": "1.2.0", "@rolldown/binding-linux-x64-gnu": "1.2.0", "@rolldown/binding-linux-x64-musl": "1.2.0", "@rolldown/binding-openharmony-arm64": "1.2.0", "@rolldown/binding-wasm32-wasi": "1.2.0", "@rolldown/binding-win32-arm64-msvc": "1.2.0", "@rolldown/binding-win32-x64-msvc": "1.2.0" }, "bin": { "rolldown": "./bin/cli.mjs" } }, "sha512-u7tgm5l4Yw1iTqUL4EcYOAt7fFvCgQMLeidrnD4GALlC6aOznCjezYajgxeyKw27u0Q5N7fwgCzjVyPIWzwuBA=="],
+ 
+     "rou3": ["rou3@0.9.1", "", {}, "sha512-z/sSmzvtwMDDnxsPVhfWMuG6F6mbmhFDXoVqLmMfbpDD9qfV3GDmSQpf0+W296/ZDIpW2wcMmBfpVFzcnOi/nA=="],
+ 
++    "safe-buffer": ["safe-buffer@5.2.1", "", {}, "sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ=="],
++
+     "scheduler": ["scheduler@0.27.0", "", {}, "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="],
+ 
+     "semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
+@@ -896,6 +1035,10 @@
+ 
+     "srvx": ["srvx@0.11.22", "", { "bin": { "srvx": "bin/srvx.mjs" } }, "sha512-LqZxxBDMKuMAZzFzJnDCkFOrs9MZQZr0LvHiO/SuSZVdQaXD7xQ5UWTUxheJrQPve1qk9MG2B/yttUvJxw8egQ=="],
+ 
++    "string-width": ["string-width@4.2.3", "", { "dependencies": { "emoji-regex": "^8.0.0", "is-fullwidth-code-point": "^3.0.0", "strip-ansi": "^6.0.1" } }, "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g=="],
++
++    "strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
++
+     "strip-json-comments": ["strip-json-comments@3.1.1", "", {}, "sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig=="],
+ 
+     "supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
+@@ -956,18 +1099,32 @@
+ 
+     "vitefu": ["vitefu@1.1.3", "", { "peerDependencies": { "vite": "^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" }, "optionalPeers": ["vite"] }, "sha512-ub4okH7Z5KLjb6hDyjqrGXqWtWvoYdU3IGm/NorpgHncKoLTCfRIbvlhBm7r0YstIaQRYlp4yEbFqDcKSzXSSg=="],
+ 
++    "web-vitals": ["web-vitals@4.2.4", "", {}, "sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw=="],
++
+     "webpack-virtual-modules": ["webpack-virtual-modules@0.6.2", "", {}, "sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ=="],
+ 
++    "websocket-driver": ["websocket-driver@0.7.5", "", { "dependencies": { "http-parser-js": ">=0.5.1", "safe-buffer": ">=5.1.0", "websocket-extensions": ">=0.1.1" } }, "sha512-ZL2+3c7kMBdIRCMz6l8jQMHyGVxj+UL+xVk74Ombiciboca8rHa15L86B19E5oh1pL9Ii/uj54gtsIrZGMo6zA=="],
++
++    "websocket-extensions": ["websocket-extensions@0.1.4", "", {}, "sha512-OqedPIGOfsDlo31UNwYbCFMSaO9m9G/0faIHj5/dZFDMFqPTcx6UwqyOy3COEaEOg/9VsGIpdqn62W5KhoKSpg=="],
++
+     "which": ["which@2.0.2", "", { "dependencies": { "isexe": "^2.0.0" }, "bin": { "node-which": "./bin/node-which" } }, "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA=="],
+ 
+     "word-wrap": ["word-wrap@1.2.5", "", {}, "sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA=="],
+ 
++    "wrap-ansi": ["wrap-ansi@7.0.0", "", { "dependencies": { "ansi-styles": "^4.0.0", "string-width": "^4.1.0", "strip-ansi": "^6.0.0" } }, "sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q=="],
++
+     "ws": ["ws@8.21.1", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-+0NTnW77fFN/DjQi6k/Sq/Yvk4Sgajw7urW8V+asjXnRgDs9gyGkdb7EzgfhA4goXsRIZKE28fzIXBHEzhuiWw=="],
+ 
+     "xmlbuilder2": ["xmlbuilder2@4.0.3", "", { "dependencies": { "@oozcitak/dom": "^2.0.2", "@oozcitak/infra": "^2.0.2", "@oozcitak/util": "^10.0.0", "js-yaml": "^4.1.1" } }, "sha512-bx8Q1STctnNaaDymWnkfQLKofs0mGNN7rLLapJlGuV3VlvegD7Ls4ggMjE3aUSWItCCzU0PEv45lI87iSigiCA=="],
+ 
++    "y18n": ["y18n@5.0.8", "", {}, "sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA=="],
++
+     "yallist": ["yallist@3.1.1", "", {}, "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g=="],
+ 
++    "yargs": ["yargs@17.7.3", "", { "dependencies": { "cliui": "^8.0.1", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "require-directory": "^2.1.1", "string-width": "^4.2.3", "y18n": "^5.0.5", "yargs-parser": "^21.1.1" } }, "sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g=="],
++
++    "yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
++
+     "yocto-queue": ["yocto-queue@0.1.0", "", {}, "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="],
+ 
+     "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
+diff --git a/firebase.json b/firebase.json
+new file mode 100644
+index 0000000..a46ca7c
+--- /dev/null
++++ b/firebase.json
+@@ -0,0 +1,10 @@
++{
++  "firestore": {
++    "rules": "firestore.rules"
++  },
++  "emulators": {
++    "auth": { "port": 9099 },
++    "firestore": { "port": 8080 },
++    "ui": { "enabled": false }
++  }
++}
+diff --git a/firestore.rules b/firestore.rules
+new file mode 100644
+index 0000000..e67415e
+--- /dev/null
++++ b/firestore.rules
+@@ -0,0 +1,61 @@
++rules_version = '2';
++
++// TYSHI ZONE Firestore rules
++// - Everyone can READ anime and episode lists (needed to watch).
++// - Only admins can WRITE. An admin is a signed-in user that has a document at
++//   admins/{their uid}. Create those documents by hand in the Firebase console;
++//   the browser can never create, change or list them.
++service cloud.firestore {
++  match /databases/{database}/documents {
++
++    function isAdmin() {
++      return request.auth != null
++        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
++    }
++
++    function stampedNow() {
++      return request.resource.data.updatedAt == request.time;
++    }
++
++    match /admins/{uid} {
++      allow get: if request.auth != null && request.auth.uid == uid;
++      allow list, write: if false;
++    }
++
++    match /anime/{animeId} {
++      allow read: if true;
++      allow create, update: if isAdmin()
++        && stampedNow()
++        && request.resource.data.keys().hasOnly(
++             ['anilistId', 'title', 'poster', 'episodeCount', 'subCount', 'dubCount', 'updatedAt'])
++        && request.resource.data.anilistId is int
++        && string(request.resource.data.anilistId) == animeId
++        && request.resource.data.title is string
++        && request.resource.data.title.size() > 0
++        && request.resource.data.title.size() <= 300
++        && (request.resource.data.poster == null
++            || (request.resource.data.poster is string && request.resource.data.poster.size() <= 2000))
++        && (!('episodeCount' in request.resource.data) || request.resource.data.episodeCount is int)
++        && (!('subCount' in request.resource.data) || request.resource.data.subCount is int)
++        && (!('dubCount' in request.resource.data) || request.resource.data.dubCount is int);
++      allow delete: if isAdmin();
++    }
++
++    match /episodeLists/{animeId} {
++      allow read: if true;
++      allow create, update: if isAdmin()
++        && stampedNow()
++        && request.resource.data.keys().hasOnly(['anilistId', 'episodes', 'updatedAt'])
++        && request.resource.data.anilistId is int
++        && string(request.resource.data.anilistId) == animeId
++        && request.resource.data.episodes is map
++        && request.resource.data.episodes.size() <= 5000;
++      allow delete: if isAdmin();
++    }
++
++    // Everything else is closed.
++    match /{document=**} {
++      allow read, write: if false;
++    }
++  }
++}
+diff --git a/package.json b/package.json
+index e167649..968ece0 100644
+--- a/package.json
++++ b/package.json
+@@ -49,6 +49,7 @@
+     "cmdk": "^1.1.1",
+     "date-fns": "^4.1.0",
+     "embla-carousel-react": "^8.6.0",
++    "firebase": "^11.10.0",
+     "input-otp": "^1.4.2",
+     "lucide-react": "^0.575.0",
+     "react": "^19.2.0",
+diff --git a/src/components/admin/admin-gate.tsx b/src/components/admin/admin-gate.tsx
+new file mode 100644
+index 0000000..481308d
+--- /dev/null
++++ b/src/components/admin/admin-gate.tsx
+@@ -0,0 +1,288 @@
++import { useEffect, useState, type FormEvent, type ReactNode } from "react";
++import type { User } from "firebase/auth";
++import {
++  Copy,
++  Loader2,
++  LockKeyhole,
++  LogOut,
++  TriangleAlert,
++} from "lucide-react";
++import { toast } from "sonner";
++
++import { checkIsAdmin } from "@/lib/cloud-episodes";
++import {
++  describeFirebaseError,
++  firebaseConfigured,
++  getAuthClient,
++} from "@/lib/firebase";
++
++const input =
++  "h-11 w-full rounded-xl border border-border bg-surface px-3 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary";
++
++type State =
++  | { kind: "loading" }
++  | { kind: "signed-out" }
++  | { kind: "checking"; user: User }
++  | { kind: "not-admin"; user: User }
++  | { kind: "admin"; user: User }
++  | { kind: "error"; message: string; user?: User };
++
++function Card({ children }: { children: ReactNode }) {
++  return (
++    <div className="mx-auto mt-10 max-w-md rounded-2xl border border-border bg-surface/40 p-6">
++      {children}
++    </div>
++  );
++}
++
++async function signOut() {
++  const [{ signOut }, auth] = await Promise.all([
++    import("firebase/auth"),
++    getAuthClient(),
++  ]);
++  await signOut(auth);
++}
++
++/**
++ * Renders `children` only for signed-in Firebase users that have a document in
++ * `admins/{uid}`. The real protection is the Firestore rules; this only hides the UI.
++ */
++export function AdminGate({
++  children,
++}: {
++  children: (user: User) => ReactNode;
++}) {
++  const [state, setState] = useState<State>({ kind: "loading" });
++  const [attempt, setAttempt] = useState(0);
++
++  useEffect(() => {
++    if (!firebaseConfigured) return;
++    let stop: (() => void) | undefined;
++    let cancelled = false;
++    Promise.all([import("firebase/auth"), getAuthClient()])
++      .then(([{ onAuthStateChanged }, auth]) => {
++        if (cancelled) return;
++        stop = onAuthStateChanged(auth, async (user) => {
++          if (!user) return setState({ kind: "signed-out" });
++          setState({ kind: "checking", user });
++          try {
++            const ok = await checkIsAdmin(user.uid);
++            setState({ kind: ok ? "admin" : "not-admin", user });
++          } catch (error) {
++            setState({
++              kind: "error",
++              message: describeFirebaseError(error),
++              user,
++            });
++          }
++        });
++      })
++      .catch((error) =>
++        setState({ kind: "error", message: describeFirebaseError(error) }),
++      );
++    return () => {
++      cancelled = true;
++      stop?.();
++    };
++  }, [attempt]);
++
++  if (!firebaseConfigured) {
++    return (
++      <Card>
++        <TriangleAlert className="size-8 text-gold" />
++        <h1 className="mt-3 text-xl font-semibold">
++          Firebase isn't connected yet
++        </h1>
++        <p className="mt-2 text-sm text-muted-foreground">
++          Add the{" "}
++          <code className="rounded bg-surface-2 px-1">VITE_FIREBASE_*</code>{" "}
++          environment variables (see{" "}
++          <code className="rounded bg-surface-2 px-1">FIREBASE_SETUP.md</code>)
++          in Netlify, then redeploy once. After that, content updates never need
++          a redeploy.
++        </p>
++      </Card>
++    );
++  }
++
++  if (state.kind === "loading" || state.kind === "checking") {
++    return (
++      <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
++        <Loader2 className="size-4 animate-spin" />
++        {state.kind === "loading" ? "Loading…" : "Checking admin access…"}
++      </div>
++    );
++  }
++
++  if (state.kind === "signed-out") return <SignInForm />;
++
++  if (state.kind === "error") {
++    return (
++      <Card>
++        <TriangleAlert className="size-8 text-destructive" />
++        <h1 className="mt-3 text-xl font-semibold">
++          Couldn't check admin access
++        </h1>
++        <p className="mt-2 text-sm text-muted-foreground">{state.message}</p>
++        <div className="mt-5 flex gap-2">
++          <button
++            type="button"
++            onClick={() => setAttempt((a) => a + 1)}
++            className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
++          >
++            Try again
++          </button>
++          {state.user && (
++            <button
++              type="button"
++              onClick={() => signOut()}
++              className="h-10 rounded-full border border-border px-5 text-sm"
++            >
++              Sign out
++            </button>
++          )}
++        </div>
++      </Card>
++    );
++  }
++
++  if (state.kind === "not-admin") {
++    return (
++      <Card>
++        <LockKeyhole className="size-8 text-gold" />
++        <h1 className="mt-3 text-xl font-semibold">
++          This account isn't an admin
++        </h1>
++        <p className="mt-2 text-sm text-muted-foreground">
++          Signed in as {state.user.email}. To grant access, open Firebase
++          console → Firestore → create a document in the{" "}
++          <code className="rounded bg-surface-2 px-1">admins</code> collection
++          whose <strong>Document ID</strong> is this user ID:
++        </p>
++        <div className="mt-3 flex items-center gap-2 rounded-xl bg-surface px-3 py-2">
++          <code className="min-w-0 flex-1 truncate text-xs">
++            {state.user.uid}
++          </code>
++          <button
++            type="button"
++            aria-label="Copy user ID"
++            onClick={() =>
++              navigator.clipboard
++                .writeText(state.user.uid)
++                .then(() => toast.success("User ID copied."))
++                .catch(() =>
++                  toast.error(
++                    "Couldn't copy. Select the ID and copy it by hand.",
++                  ),
++                )
++            }
++            className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground"
++          >
++            <Copy className="size-4" />
++          </button>
++        </div>
++        <div className="mt-5 flex gap-2">
++          <button
++            type="button"
++            onClick={() => setAttempt((a) => a + 1)}
++            className="h-10 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground"
++          >
++            I've added it — check again
++          </button>
++          <button
++            type="button"
++            onClick={() => signOut()}
++            className="h-10 rounded-full border border-border px-5 text-sm"
++          >
++            Sign out
++          </button>
++        </div>
++      </Card>
++    );
++  }
++
++  return (
++    <>
++      <div className="mb-6 flex flex-wrap items-center justify-end gap-3 text-xs text-muted-foreground">
++        Signed in as {state.user.email}
++        <button
++          type="button"
++          onClick={() =>
++            signOut().catch((e) => toast.error(describeFirebaseError(e)))
++          }
++          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-3 transition hover:border-primary/60 hover:text-foreground"
++        >
++          <LogOut className="size-3.5" />
++          Sign out
++        </button>
++      </div>
++      {children(state.user)}
++    </>
++  );
++}
++
++function SignInForm() {
++  const [email, setEmail] = useState("");
++  const [password, setPassword] = useState("");
++  const [busy, setBusy] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++
++  async function submit(e: FormEvent) {
++    e.preventDefault();
++    setBusy(true);
++    setError(null);
++    try {
++      const [{ signInWithEmailAndPassword }, auth] = await Promise.all([
++        import("firebase/auth"),
++        getAuthClient(),
++      ]);
++      await signInWithEmailAndPassword(auth, email.trim(), password);
++    } catch (err) {
++      setError(describeFirebaseError(err));
++    } finally {
++      setBusy(false);
++    }
++  }
++
++  return (
++    <Card>
++      <LockKeyhole className="size-8 text-primary" />
++      <h1 className="mt-3 text-xl font-semibold">Admin sign in</h1>
++      <p className="mt-1 text-sm text-muted-foreground">
++        Use the email and password of the admin user you created in Firebase
++        Authentication.
++      </p>
++      <form onSubmit={submit} className="mt-5 space-y-3">
++        <input
++          type="email"
++          autoComplete="username"
++          required
++          value={email}
++          onChange={(e) => setEmail(e.target.value)}
++          placeholder="Email"
++          aria-label="Email"
++          className={input}
++        />
++        <input
++          type="password"
++          autoComplete="current-password"
++          required
++          value={password}
++          onChange={(e) => setPassword(e.target.value)}
++          placeholder="Password"
++          aria-label="Password"
++          className={input}
++        />
++        {error && <p className="text-sm text-destructive">{error}</p>}
++        <button
++          type="submit"
++          disabled={busy}
++          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-60"
++        >
++          {busy && <Loader2 className="size-4 animate-spin" />}
++          Sign in
++        </button>
++      </form>
++    </Card>
++  );
++}
+diff --git a/src/components/admin/anime-picker.tsx b/src/components/admin/anime-picker.tsx
+new file mode 100644
+index 0000000..5181f23
+--- /dev/null
++++ b/src/components/admin/anime-picker.tsx
+@@ -0,0 +1,242 @@
++import { useEffect, useState } from "react";
++import { useQuery } from "@tanstack/react-query";
++import { Loader2, Search } from "lucide-react";
++
++import { browseMedia, getMedia, titleOf, type MediaCard } from "@/lib/anilist";
++import {
++  watchCatalog,
++  type AnimeRef,
++  type CloudAnime,
++} from "@/lib/cloud-episodes";
++import { describeFirebaseError } from "@/lib/firebase";
++import { cn } from "@/lib/utils";
++
++const input =
++  "h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary";
++
++const fromMedia = (m: MediaCard): AnimeRef => ({
++  anilistId: m.id,
++  title: titleOf(m),
++  poster: m.coverImage.extraLarge ?? m.coverImage.large ?? null,
++});
++
++/** Choose a title: from what's already in Firestore, an AniList search, or an AniList ID. */
++export function AnimePicker({
++  value,
++  onChange,
++}: {
++  value: AnimeRef | null;
++  onChange: (anime: AnimeRef) => void;
++}) {
++  const [catalog, setCatalog] = useState<CloudAnime[] | null>(null);
++  const [catalogError, setCatalogError] = useState<string | null>(null);
++  const [term, setTerm] = useState("");
++  const [debounced, setDebounced] = useState("");
++  const [idText, setIdText] = useState("");
++  const [idBusy, setIdBusy] = useState(false);
++  const [idError, setIdError] = useState<string | null>(null);
++
++  useEffect(
++    () =>
++      watchCatalog(
++        (list) => {
++          setCatalog(list);
++          setCatalogError(null);
++        },
++        (error) => setCatalogError(describeFirebaseError(error)),
++        200,
++      ),
++    [],
++  );
++
++  useEffect(() => {
++    const t = window.setTimeout(() => setDebounced(term.trim()), 350);
++    return () => window.clearTimeout(t);
++  }, [term]);
++
++  const search = useQuery({
++    queryKey: ["anilist", "admin-search", debounced],
++    queryFn: () =>
++      browseMedia({ search: debounced, perPage: 8, sort: ["SEARCH_MATCH"] }),
++    enabled: debounced.length >= 2,
++    staleTime: 60_000,
++  });
++
++  async function pickById() {
++    const id = Number(idText);
++    if (!Number.isSafeInteger(id) || id < 1)
++      return setIdError("Enter a numeric AniList ID.");
++    setIdBusy(true);
++    setIdError(null);
++    try {
++      onChange(fromMedia(await getMedia(id)));
++      setIdText("");
++    } catch (error) {
++      setIdError(
++        error instanceof TypeError
++          ? "Couldn't reach AniList. Check your connection and try again."
++          : "No anime found with that AniList ID.",
++      );
++    } finally {
++      setIdBusy(false);
++    }
++  }
++
++  return (
++    <section className="rounded-2xl border border-border bg-surface/40 p-4 md:p-5">
++      <h2 className="text-lg font-semibold tracking-tight">
++        1. Choose an anime
++      </h2>
++      <p className="mt-1 text-sm text-muted-foreground">
++        Episodes are linked to the AniList ID, the same ID used in your site's
++        anime pages (
++        <code className="rounded bg-surface-2 px-1">/anime/ID</code>).
++      </p>
++
++      <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_16rem]">
++        <label className="relative">
++          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
++          <input
++            value={term}
++            onChange={(e) => setTerm(e.target.value)}
++            placeholder="Search AniList by name"
++            aria-label="Search anime"
++            className={cn(input, "pl-9")}
++          />
++        </label>
++        <div className="flex gap-2">
++          <input
++            value={idText}
++            onChange={(e) => setIdText(e.target.value.replace(/\D/g, ""))}
++            onKeyDown={(e) => e.key === "Enter" && pickById()}
++            inputMode="numeric"
++            placeholder="AniList ID"
++            aria-label="AniList ID"
++            className={input}
++          />
++          <button
++            type="button"
++            onClick={pickById}
++            disabled={idBusy || !idText}
++            className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full border border-border px-4 text-sm transition hover:border-primary disabled:opacity-50"
++          >
++            {idBusy && <Loader2 className="size-3.5 animate-spin" />}
++            Open
++          </button>
++        </div>
++      </div>
++      {idError && <p className="mt-2 text-xs text-destructive">{idError}</p>}
++
++      {debounced.length >= 2 && (
++        <div className="mt-3">
++          {search.isLoading ? (
++            <p className="flex items-center gap-2 text-xs text-muted-foreground">
++              <Loader2 className="size-3.5 animate-spin" /> Searching…
++            </p>
++          ) : search.isError ? (
++            <p className="text-xs text-destructive">
++              AniList search failed. Try again.
++            </p>
++          ) : search.data?.media.length ? (
++            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
++              {search.data.media.map((m) => (
++                <li key={m.id}>
++                  <AnimeChoice
++                    anime={fromMedia(m)}
++                    active={value?.anilistId === m.id}
++                    onSelect={() => {
++                      onChange(fromMedia(m));
++                      setTerm("");
++                    }}
++                  />
++                </li>
++              ))}
++            </ul>
++          ) : (
++            <p className="text-xs text-muted-foreground">No matches.</p>
++          )}
++        </div>
++      )}
++
++      <div className="mt-5">
++        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
++          Already in your database
++        </p>
++        {catalogError ? (
++          <p className="mt-2 text-xs text-destructive">{catalogError}</p>
++        ) : catalog === null ? (
++          <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
++            <Loader2 className="size-3.5 animate-spin" /> Loading…
++          </p>
++        ) : catalog.length === 0 ? (
++          <p className="mt-2 text-xs text-muted-foreground">
++            Nothing yet. Search for an anime above to add its first episodes.
++          </p>
++        ) : (
++          <ul className="mt-2 grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2 lg:grid-cols-4">
++            {catalog.map((a) => (
++              <li key={a.anilistId}>
++                <AnimeChoice
++                  anime={a}
++                  active={value?.anilistId === a.anilistId}
++                  detail={`${a.episodeCount} ep · SUB ${a.subCount} · DUB ${a.dubCount}`}
++                  onSelect={() =>
++                    onChange({
++                      anilistId: a.anilistId,
++                      title: a.title,
++                      poster: a.poster,
++                    })
++                  }
++                />
++              </li>
++            ))}
++          </ul>
++        )}
++      </div>
++    </section>
++  );
++}
++
++function AnimeChoice({
++  anime,
++  active,
++  detail,
++  onSelect,
++}: {
++  anime: AnimeRef;
++  active: boolean;
++  detail?: string;
++  onSelect: () => void;
++}) {
++  return (
++    <button
++      type="button"
++      onClick={onSelect}
++      aria-pressed={active}
++      className={cn(
++        "flex w-full items-center gap-3 rounded-xl p-2 text-left ring-1 transition",
++        active
++          ? "bg-primary/10 ring-primary/70"
++          : "bg-surface/60 ring-border hover:ring-primary/40",
++      )}
++    >
++      {anime.poster ? (
++        <img
++          src={anime.poster}
++          alt=""
++          className="h-14 w-10 shrink-0 rounded-md object-cover"
++        />
++      ) : (
++        <div className="h-14 w-10 shrink-0 rounded-md bg-surface-2" />
++      )}
++      <div className="min-w-0">
++        <p className="line-clamp-2 text-sm font-medium leading-snug">
++          {anime.title}
++        </p>
++        <p className="mt-0.5 text-[11px] text-muted-foreground">
++          {detail ?? `AniList ${anime.anilistId}`}
++        </p>
++      </div>
++    </button>
++  );
++}
+diff --git a/src/components/admin/episode-table.tsx b/src/components/admin/episode-table.tsx
+new file mode 100644
+index 0000000..1f58bc8
+--- /dev/null
++++ b/src/components/admin/episode-table.tsx
+@@ -0,0 +1,641 @@
++import { useEffect, useRef, useState, type FormEvent } from "react";
++import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
++import { toast } from "sonner";
++
++import {
++  AlertDialog,
++  AlertDialogAction,
++  AlertDialogCancel,
++  AlertDialogContent,
++  AlertDialogDescription,
++  AlertDialogFooter,
++  AlertDialogHeader,
++  AlertDialogTitle,
++} from "@/components/ui/alert-dialog";
++import {
++  deleteEpisodes,
++  saveAnimeDetails,
++  saveEpisode,
++  type AnimeRef,
++  type CloudEpisode,
++  type Lang,
++} from "@/lib/cloud-episodes";
++import { describeFirebaseError } from "@/lib/firebase";
++import { toEmbed } from "@/lib/video-embed";
++import { cn } from "@/lib/utils";
++
++const input =
++  "h-10 w-full rounded-xl border border-border bg-surface px-3 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary";
++
++function validImage(v: string) {
++  if (!v.trim()) return true;
++  try {
++    return ["http:", "https:"].includes(new URL(v.trim()).protocol);
++  } catch {
++    return false;
++  }
++}
++
++/** Title + poster stored in the `anime` collection. */
++export function AnimeDetailsForm({
++  anime,
++  onSaved,
++}: {
++  anime: AnimeRef;
++  onSaved: (anime: AnimeRef) => void;
++}) {
++  const [title, setTitle] = useState(anime.title);
++  const [poster, setPoster] = useState(anime.poster ?? "");
++  const [busy, setBusy] = useState(false);
++
++  async function submit(e: FormEvent) {
++    e.preventDefault();
++    if (!title.trim()) return toast.error("Add a title.");
++    if (!validImage(poster))
++      return toast.error("Poster must be an https:// image link.");
++    setBusy(true);
++    try {
++      const next = {
++        ...anime,
++        title: title.trim(),
++        poster: poster.trim() || null,
++      };
++      await saveAnimeDetails(next);
++      onSaved(next);
++      toast.success("Anime details saved.");
++    } catch (error) {
++      toast.error(describeFirebaseError(error));
++    } finally {
++      setBusy(false);
++    }
++  }
++
++  return (
++    <form
++      onSubmit={submit}
++      className="flex flex-col gap-4 rounded-2xl border border-border bg-surface/40 p-4 md:flex-row md:items-end md:p-5"
++    >
++      {poster && validImage(poster) ? (
++        <img
++          src={poster}
++          alt=""
++          className="h-28 w-20 shrink-0 rounded-lg object-cover"
++        />
++      ) : (
++        <div className="h-28 w-20 shrink-0 rounded-lg bg-surface-2" />
++      )}
++      <div className="grid flex-1 gap-3 md:grid-cols-2">
++        <label className="text-xs text-muted-foreground">
++          Title
++          <input
++            value={title}
++            onChange={(e) => setTitle(e.target.value)}
++            className={cn(input, "mt-1")}
++          />
++        </label>
++        <label className="text-xs text-muted-foreground">
++          Poster image link
++          <input
++            value={poster}
++            onChange={(e) => setPoster(e.target.value)}
++            placeholder="https://…"
++            className={cn(
++              input,
++              "mt-1",
++              !validImage(poster) && "border-destructive",
++            )}
++          />
++        </label>
++        <p className="text-[11px] text-muted-foreground md:col-span-2">
++          AniList ID {anime.anilistId}. Used for the “Available to watch” row on
++          your home page.
++        </p>
++      </div>
++      <button
++        type="submit"
++        disabled={busy}
++        className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-5 text-sm transition hover:border-primary disabled:opacity-50"
++      >
++        {busy && <Loader2 className="size-4 animate-spin" />}
++        Save details
++      </button>
++    </form>
++  );
++}
++
++type Draft = {
++  number: string;
++  title: string;
++  thumbnail: string;
++  subUrl: string;
++  dubUrl: string;
++};
++
++function EpisodeForm({
++  anime,
++  initial,
++  taken,
++  onDone,
++}: {
++  anime: AnimeRef;
++  initial?: CloudEpisode;
++  taken: Set<number>;
++  onDone: () => void;
++}) {
++  const [d, setD] = useState<Draft>({
++    number: initial
++      ? String(initial.number)
++      : String(Math.max(0, ...taken) + 1),
++    title: initial?.title ?? "",
++    thumbnail: initial?.thumbnail ?? "",
++    subUrl: initial?.subUrl ?? "",
++    dubUrl: initial?.dubUrl ?? "",
++  });
++  const [busy, setBusy] = useState(false);
++  const set = (p: Partial<Draft>) => setD((x) => ({ ...x, ...p }));
++
++  const n = Number(d.number);
++  const numberError =
++    !Number.isSafeInteger(n) || n < 1
++      ? "Positive whole number"
++      : taken.has(n) && n !== initial?.number
++        ? "Already exists"
++        : null;
++  const sub = d.subUrl.trim() ? toEmbed(d.subUrl) : null;
++  const dub = d.dubUrl.trim() ? toEmbed(d.dubUrl) : null;
++  const subError = d.subUrl.trim() && !sub ? "That link didn't parse" : null;
++  const dubError = d.dubUrl.trim() && !dub ? "That link didn't parse" : null;
++
++  async function submit(e: FormEvent) {
++    e.preventDefault();
++    if (numberError || subError || dubError)
++      return toast.error("Fix the highlighted fields.");
++    if (!sub && !dub) return toast.error("Add a SUB or DUB link.");
++    if (!validImage(d.thumbnail))
++      return toast.error("Thumbnail must be an https:// image link.");
++    setBusy(true);
++    try {
++      await saveEpisode(
++        anime,
++        {
++          number: n,
++          title: d.title.trim().slice(0, 200) || undefined,
++          thumbnail: d.thumbnail.trim() || undefined,
++          subUrl: sub?.src,
++          dubUrl: dub?.src,
++        },
++        initial?.number,
++      );
++      toast.success(`Episode ${n} saved.`);
++      onDone();
++    } catch (error) {
++      toast.error(describeFirebaseError(error));
++    } finally {
++      setBusy(false);
++    }
++  }
++
++  return (
++    <form
++      onSubmit={submit}
++      className="grid gap-2 rounded-xl bg-surface p-3 md:grid-cols-6"
++    >
++      <label className="text-[11px] text-muted-foreground">
++        Episode
++        <input
++          value={d.number}
++          onChange={(e) => set({ number: e.target.value.replace(/\D/g, "") })}
++          inputMode="numeric"
++          className={cn(
++            input,
++            "mt-1 tabular-nums",
++            numberError && "border-destructive",
++          )}
++        />
++        {numberError && <span className="text-destructive">{numberError}</span>}
++      </label>
++      <label className="text-[11px] text-muted-foreground md:col-span-2">
++        Title (optional)
++        <input
++          value={d.title}
++          onChange={(e) => set({ title: e.target.value })}
++          className={cn(input, "mt-1")}
++        />
++      </label>
++      <label className="text-[11px] text-muted-foreground md:col-span-3">
++        Thumbnail link (optional)
++        <input
++          value={d.thumbnail}
++          onChange={(e) => set({ thumbnail: e.target.value })}
++          className={cn(
++            input,
++            "mt-1",
++            !validImage(d.thumbnail) && "border-destructive",
++          )}
++        />
++      </label>
++      <label className="text-[11px] text-muted-foreground md:col-span-3">
++        SUB link or iframe code
++        <input
++          value={d.subUrl}
++          onChange={(e) => set({ subUrl: e.target.value })}
++          placeholder="https://… or <iframe …>"
++          className={cn(input, "mt-1", subError && "border-destructive")}
++        />
++        {subError && <span className="text-destructive">{subError}</span>}
++      </label>
++      <label className="text-[11px] text-muted-foreground md:col-span-3">
++        DUB link or iframe code
++        <input
++          value={d.dubUrl}
++          onChange={(e) => set({ dubUrl: e.target.value })}
++          placeholder="https://… or <iframe …>"
++          className={cn(input, "mt-1", dubError && "border-destructive")}
++        />
++        {dubError && <span className="text-destructive">{dubError}</span>}
++      </label>
++      <div className="flex justify-end gap-2 md:col-span-6">
++        <button
++          type="button"
++          onClick={onDone}
++          className="h-9 rounded-full px-4 text-sm text-muted-foreground hover:text-foreground"
++        >
++          Cancel
++        </button>
++        <button
++          type="submit"
++          disabled={busy}
++          className="inline-flex h-9 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
++        >
++          {busy && <Loader2 className="size-4 animate-spin" />}
++          Save episode
++        </button>
++      </div>
++    </form>
++  );
++}
++
++type PendingDelete = { numbers: number[]; lang?: Lang };
++
++const toolButton =
++  "inline-flex h-8 items-center gap-1 rounded-full border border-border px-3 text-xs transition hover:border-destructive hover:text-destructive disabled:opacity-50";
++
++function describeNumbers(numbers: number[]) {
++  return numbers.length === 1
++    ? `episode ${numbers[0]}`
++    : `${numbers.length} episodes`;
++}
++
++function SelectAllBox({
++  checked,
++  indeterminate,
++  onChange,
++}: {
++  checked: boolean;
++  indeterminate: boolean;
++  onChange: (checked: boolean) => void;
++}) {
++  const ref = useRef<HTMLInputElement>(null);
++  useEffect(() => {
++    if (ref.current) ref.current.indeterminate = indeterminate;
++  }, [indeterminate]);
++  return (
++    <input
++      ref={ref}
++      type="checkbox"
++      checked={checked}
++      onChange={(e) => onChange(e.target.checked)}
++      aria-label="Select all episodes"
++      className="size-4 accent-primary"
++    />
++  );
++}
++
++/** Every episode in Firestore for this title, with SUB/DUB status, edit and delete. */
++export function EpisodeTable({
++  anime,
++  episodes,
++}: {
++  anime: AnimeRef;
++  episodes: CloudEpisode[];
++}) {
++  const [editing, setEditing] = useState<number | "new" | null>(null);
++  const [pending, setPending] = useState<PendingDelete | null>(null);
++  const [deleting, setDeleting] = useState(false);
++  const [filter, setFilter] = useState("");
++  const [selected, setSelected] = useState<Set<number>>(() => new Set());
++  const lastClicked = useRef<number | null>(null);
++  const taken = new Set(episodes.map((e) => e.number));
++  const q = filter.trim().toLowerCase();
++  const visible = q
++    ? episodes.filter(
++        (e) =>
++          String(e.number).includes(q) || e.title?.toLowerCase().includes(q),
++      )
++    : episodes;
++
++  const chosen = episodes.filter((e) => selected.has(e.number));
++  const chosenNumbers = chosen.map((e) => e.number);
++  const chosenWithSub = chosen.filter((e) => e.subUrl).map((e) => e.number);
++  const chosenWithDub = chosen.filter((e) => e.dubUrl).map((e) => e.number);
++  const visibleSelected = visible.filter((e) => selected.has(e.number)).length;
++  const allVisibleSelected =
++    visible.length > 0 && visibleSelected === visible.length;
++
++  function toggleAllVisible(on: boolean) {
++    setSelected((prev) => {
++      const next = new Set(prev);
++      for (const e of visible) {
++        if (on) next.add(e.number);
++        else next.delete(e.number);
++      }
++      return next;
++    });
++    lastClicked.current = null;
++  }
++
++  function toggleOne(number: number, on: boolean, range: boolean) {
++    setSelected((prev) => {
++      const next = new Set(prev);
++      const from = visible.findIndex((e) => e.number === lastClicked.current);
++      const to = visible.findIndex((e) => e.number === number);
++      const span =
++        range && from !== -1 && to !== -1
++          ? visible.slice(Math.min(from, to), Math.max(from, to) + 1)
++          : [{ number }];
++      for (const e of span) {
++        if (on) next.add(e.number);
++        else next.delete(e.number);
++      }
++      return next;
++    });
++    lastClicked.current = number;
++  }
++
++  async function confirmDelete() {
++    if (!pending) return;
++    const { numbers, lang } = pending;
++    setPending(null);
++    setDeleting(true);
++    try {
++      await deleteEpisodes(anime, numbers, lang);
++      setSelected((prev) => {
++        if (lang) return prev;
++        const next = new Set(prev);
++        for (const n of numbers) next.delete(n);
++        return next;
++      });
++      const what = describeNumbers(numbers);
++      toast.success(
++        lang
++          ? `Removed ${lang.toUpperCase()} from ${what}.`
++          : `Deleted ${what}.`,
++      );
++    } catch (error) {
++      toast.error(describeFirebaseError(error));
++    } finally {
++      setDeleting(false);
++    }
++  }
++
++  const badge = (on: boolean, text: string) => (
++    <span
++      className={cn(
++        "rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
++        on
++          ? "bg-primary/15 text-primary"
++          : "bg-surface-2 text-muted-foreground/60 line-through",
++      )}
++    >
++      {text}
++    </span>
++  );
++
++  return (
++    <section className="rounded-2xl border border-border bg-surface/40 p-4 md:p-5">
++      <div className="flex flex-wrap items-center gap-2">
++        <h2 className="mr-auto text-lg font-semibold tracking-tight">
++          Episodes in Firestore{" "}
++          <span className="text-sm font-normal text-muted-foreground">
++            ({episodes.length})
++          </span>
++        </h2>
++        {episodes.length > 12 && (
++          <input
++            value={filter}
++            onChange={(e) => setFilter(e.target.value)}
++            placeholder="Find episode"
++            aria-label="Find episode"
++            className={cn(input, "w-40")}
++          />
++        )}
++        <button
++          type="button"
++          onClick={() => setEditing("new")}
++          className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border px-4 text-sm transition hover:border-primary"
++        >
++          <Plus className="size-4" /> Add one episode
++        </button>
++      </div>
++
++      {editing === "new" && (
++        <div className="mt-3">
++          <EpisodeForm
++            anime={anime}
++            taken={taken}
++            onDone={() => setEditing(null)}
++          />
++        </div>
++      )}
++
++      {episodes.length === 0 ? (
++        <p className="mt-4 text-sm text-muted-foreground">
++          No episodes yet. Import SUB or DUB links above.
++        </p>
++      ) : (
++        <>
++          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-surface px-3 py-2 text-sm">
++            <label className="mr-auto flex cursor-pointer items-center gap-2 text-muted-foreground">
++              <SelectAllBox
++                checked={allVisibleSelected}
++                indeterminate={visibleSelected > 0 && !allVisibleSelected}
++                onChange={toggleAllVisible}
++              />
++              {chosen.length > 0 ? (
++                <span>
++                  <strong className="text-foreground">{chosen.length}</strong>{" "}
++                  selected
++                </span>
++              ) : (
++                <span>
++                  Select all{q ? " shown" : ""}
++                  <span className="hidden sm:inline">
++                    {" "}
++                    · Shift+click to select a range
++                  </span>
++                </span>
++              )}
++            </label>
++            {deleting && (
++              <Loader2 className="size-4 animate-spin text-muted-foreground" />
++            )}
++            {chosen.length > 0 && (
++              <>
++                <button
++                  type="button"
++                  disabled={deleting || chosenWithSub.length === 0}
++                  onClick={() =>
++                    setPending({ numbers: chosenWithSub, lang: "sub" })
++                  }
++                  className={toolButton}
++                >
++                  <X className="size-3" /> Remove SUB ({chosenWithSub.length})
++                </button>
++                <button
++                  type="button"
++                  disabled={deleting || chosenWithDub.length === 0}
++                  onClick={() =>
++                    setPending({ numbers: chosenWithDub, lang: "dub" })
++                  }
++                  className={toolButton}
++                >
++                  <X className="size-3" /> Remove DUB ({chosenWithDub.length})
++                </button>
++                <button
++                  type="button"
++                  disabled={deleting}
++                  onClick={() => setPending({ numbers: chosenNumbers })}
++                  className={cn(
++                    toolButton,
++                    "border-destructive/60 text-destructive",
++                  )}
++                >
++                  <Trash2 className="size-3" /> Delete selected ({chosen.length}
++                  )
++                </button>
++                <button
++                  type="button"
++                  onClick={() => setSelected(new Set())}
++                  className="h-8 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
++                >
++                  Clear
++                </button>
++              </>
++            )}
++          </div>
++
++          <ul className="mt-2 max-h-[36rem] space-y-2 overflow-y-auto">
++            {visible.map((e) => (
++              <li
++                key={e.number}
++                className={cn(
++                  "rounded-xl border border-border/60 p-2",
++                  selected.has(e.number) && "border-primary/60 bg-primary/5",
++                )}
++              >
++                {editing === e.number ? (
++                  <EpisodeForm
++                    anime={anime}
++                    initial={e}
++                    taken={taken}
++                    onDone={() => setEditing(null)}
++                  />
++                ) : (
++                  <div className="flex flex-wrap items-center gap-2 text-sm">
++                    <input
++                      type="checkbox"
++                      checked={selected.has(e.number)}
++                      onClick={(ev) =>
++                        toggleOne(
++                          e.number,
++                          ev.currentTarget.checked,
++                          ev.shiftKey,
++                        )
++                      }
++                      onChange={() => {}}
++                      aria-label={`Select episode ${e.number}`}
++                      className="size-4 accent-primary"
++                    />
++                    <span className="w-12 font-semibold tabular-nums">
++                      {e.number}
++                    </span>
++                    <span className="min-w-0 flex-1 truncate text-muted-foreground">
++                      {e.title || `Episode ${e.number}`}
++                    </span>
++                    {badge(Boolean(e.subUrl), "SUB")}
++                    {badge(Boolean(e.dubUrl), "DUB")}
++                    <button
++                      type="button"
++                      onClick={() => setEditing(e.number)}
++                      aria-label={`Edit episode ${e.number}`}
++                      className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground"
++                    >
++                      <Pencil className="size-4" />
++                    </button>
++                    {e.subUrl && e.dubUrl && (
++                      <>
++                        <button
++                          type="button"
++                          onClick={() =>
++                            setPending({ numbers: [e.number], lang: "sub" })
++                          }
++                          className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] text-muted-foreground hover:text-destructive"
++                        >
++                          <X className="size-3" /> SUB
++                        </button>
++                        <button
++                          type="button"
++                          onClick={() =>
++                            setPending({ numbers: [e.number], lang: "dub" })
++                          }
++                          className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[11px] text-muted-foreground hover:text-destructive"
++                        >
++                          <X className="size-3" /> DUB
++                        </button>
++                      </>
++                    )}
++                    <button
++                      type="button"
++                      onClick={() => setPending({ numbers: [e.number] })}
++                      aria-label={`Delete episode ${e.number}`}
++                      className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:text-destructive"
++                    >
++                      <Trash2 className="size-4" />
++                    </button>
++                  </div>
++                )}
++              </li>
++            ))}
++          </ul>
++        </>
++      )}
++
++      <AlertDialog
++        open={pending !== null}
++        onOpenChange={(open) => !open && setPending(null)}
++      >
++        <AlertDialogContent>
++          <AlertDialogHeader>
++            <AlertDialogTitle>
++              {pending &&
++                (pending.lang
++                  ? `Remove the ${pending.lang.toUpperCase()} link from ${describeNumbers(pending.numbers)}?`
++                  : `Delete ${describeNumbers(pending.numbers)}?`)}
++            </AlertDialogTitle>
++            <AlertDialogDescription>
++              {pending?.lang
++                ? "The other language stays available. Episodes left with no links are removed."
++                : "Both SUB and DUB links are removed for every visitor. This can't be undone."}
++            </AlertDialogDescription>
++          </AlertDialogHeader>
++          <AlertDialogFooter>
++            <AlertDialogCancel>Cancel</AlertDialogCancel>
++            <AlertDialogAction onClick={confirmDelete}>
++              Delete
++            </AlertDialogAction>
++          </AlertDialogFooter>
++        </AlertDialogContent>
++      </AlertDialog>
++    </section>
++  );
++}
+diff --git a/src/components/admin/link-importer.tsx b/src/components/admin/link-importer.tsx
+new file mode 100644
+index 0000000..61e07b4
+--- /dev/null
++++ b/src/components/admin/link-importer.tsx
+@@ -0,0 +1,440 @@
++import { useMemo, useState } from "react";
++import {
++  FileUp,
++  HardDriveDownload,
++  Loader2,
++  Play,
++  Save,
++  X,
++} from "lucide-react";
++import { toast } from "sonner";
++
++import { VideoPlayer } from "@/components/video-player";
++import { readVideos } from "@/hooks/use-videos";
++import {
++  importLinks,
++  langField,
++  langLabel,
++  type AnimeRef,
++  type CloudEpisode,
++  type Lang,
++} from "@/lib/cloud-episodes";
++import { describeFirebaseError } from "@/lib/firebase";
++import {
++  extractLinks,
++  fileHasEpisodeNumbers,
++  mapLinksToEpisodes,
++  type NumberingMode,
++} from "@/lib/link-import";
++import { cn } from "@/lib/utils";
++
++const input =
++  "h-10 rounded-xl border border-border bg-surface px-3 text-sm outline-none transition focus:border-primary";
++
++type Status = "new" | "replace" | "keep" | "same" | "duplicate";
++
++const STATUS_TEXT: Record<Status, string> = {
++  new: "New",
++  replace: "Replaces current link",
++  keep: "Skipped (already has a link)",
++  same: "Unchanged",
++  duplicate: "Duplicate episode number",
++};
++
++/**
++ * Import one language (SUB or DUB) from a TXT file or pasted text. Links keep their
++ * order and are numbered sequentially, or by the numbers written in the file.
++ * Saving only writes this language's field, so the other language is never touched.
++ */
++export function LinkImporter({
++  anime,
++  lang,
++  existing,
++}: {
++  anime: AnimeRef;
++  lang: Lang;
++  existing: CloudEpisode[];
++}) {
++  const label = langLabel(lang);
++  const field = langField(lang);
++  const other = lang === "sub" ? "dubUrl" : "subUrl";
++  const otherLabel = lang === "sub" ? "DUB" : "SUB";
++
++  const [text, setText] = useState("");
++  const [fileName, setFileName] = useState<string | null>(null);
++  const [start, setStart] = useState("1");
++  const [modeChoice, setModeChoice] = useState<"auto" | NumberingMode>("auto");
++  const [replace, setReplace] = useState(false);
++  const [preview, setPreview] = useState<number | null>(null);
++  const [saving, setSaving] = useState(false);
++
++  const existingByNumber = useMemo(
++    () => new Map(existing.map((e) => [e.number, e])),
++    [existing],
++  );
++  const { links, skipped } = useMemo(() => extractLinks(text), [text]);
++  const hasNumbers = useMemo(() => fileHasEpisodeNumbers(links), [links]);
++  const mode: NumberingMode =
++    modeChoice === "auto" ? (hasNumbers ? "file" : "sequential") : modeChoice;
++  const startNumber = Number(start);
++  const startValid = Number.isSafeInteger(startNumber) && startNumber >= 1;
++
++  const rows = useMemo(() => {
++    if (!startValid) return [];
++    const mapped = mapLinksToEpisodes(links, mode, startNumber);
++    const counts = new Map<number, number>();
++    const urlCounts = new Map<string, number>();
++    for (const m of mapped) {
++      counts.set(m.number, (counts.get(m.number) ?? 0) + 1);
++      urlCounts.set(m.url, (urlCounts.get(m.url) ?? 0) + 1);
++    }
++    return mapped.map((m) => {
++      const current = existingByNumber.get(m.number);
++      let status: Status;
++      if ((counts.get(m.number) ?? 0) > 1) status = "duplicate";
++      else if (!current?.[field]) status = "new";
++      else if (current[field] === m.url) status = "same";
++      else status = replace ? "replace" : "keep";
++      return {
++        ...m,
++        status,
++        repeatedUrl: (urlCounts.get(m.url) ?? 0) > 1,
++        otherKept: Boolean(current?.[other]),
++      };
++    });
++  }, [
++    links,
++    mode,
++    startNumber,
++    startValid,
++    existingByNumber,
++    field,
++    other,
++    replace,
++  ]);
++
++  const blocking = rows.some((r) => r.status === "duplicate");
++  const toWrite = rows.filter(
++    (r) => r.status === "new" || r.status === "replace",
++  );
++  const replacing = rows.filter(
++    (r) => r.status === "replace" || r.status === "keep",
++  ).length;
++  const previewRow = preview !== null ? rows[preview] : undefined;
++
++  function reset() {
++    setText("");
++    setFileName(null);
++    setPreview(null);
++    setReplace(false);
++  }
++
++  function loadFromBrowser() {
++    const local = readVideos()
++      .filter((v) => v.animeId === anime.anilistId && v.episode !== undefined)
++      .sort((a, b) => a.episode! - b.episode!);
++    if (!local.length)
++      return toast.error("This browser has no saved episodes for this anime.");
++    setText(local.map((v) => `Episode ${v.episode} | ${v.url}`).join("\n"));
++    setFileName("Episodes saved in this browser");
++    setModeChoice("auto");
++    setPreview(null);
++  }
++
++  async function save() {
++    if (!toWrite.length) return;
++    setSaving(true);
++    try {
++      const result = await importLinks(
++        anime,
++        lang,
++        toWrite.map((r) => ({ number: r.number, url: r.url })),
++        replace,
++      );
++      toast.success(
++        `${label}: ${result.added} added, ${result.replaced} replaced${result.skipped ? `, ${result.skipped} skipped` : ""}. Live on the site now.`,
++      );
++      reset();
++    } catch (error) {
++      toast.error(describeFirebaseError(error));
++    } finally {
++      setSaving(false);
++    }
++  }
++
++  return (
++    <section className="rounded-2xl border border-border bg-surface/40 p-4 md:p-5">
++      <div className="flex flex-wrap items-start justify-between gap-3">
++        <div>
++          <h3 className="text-lg font-semibold tracking-tight">
++            Import{" "}
++            <span
++              className={cn(
++                "rounded-md px-1.5 py-0.5 text-sm",
++                lang === "sub"
++                  ? "bg-primary/15 text-primary"
++                  : "bg-gold/15 text-gold",
++              )}
++            >
++              {label}
++            </span>{" "}
++            links (TXT)
++          </h3>
++          <p className="mt-1 text-sm text-muted-foreground">
++            One link per line, in episode order. Plain URLs,{" "}
++            <code>&lt;iframe&gt;</code> codes and “Episode 5 | link” lines all
++            work. Only {label} links are written — existing {otherLabel} links
++            stay untouched.
++          </p>
++        </div>
++        {text && (
++          <button
++            type="button"
++            onClick={reset}
++            className="inline-flex h-9 items-center gap-1 rounded-full px-3 text-xs text-muted-foreground hover:text-foreground"
++          >
++            <X className="size-3.5" /> Clear
++          </button>
++        )}
++      </div>
++
++      <div className="mt-4 flex flex-wrap items-center gap-2">
++        <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:brightness-110">
++          <FileUp className="size-4" />
++          Choose {label} TXT file
++          <input
++            type="file"
++            accept=".txt,text/plain"
++            className="sr-only"
++            onChange={async (event) => {
++              const file = event.target.files?.[0];
++              event.target.value = "";
++              if (!file) return;
++              if (file.size > 2_000_000)
++                return toast.error("Choose a file smaller than 2 MB.");
++              try {
++                setText(await file.text());
++                setFileName(file.name);
++                setPreview(null);
++              } catch {
++                toast.error("Couldn't read that file.");
++              }
++            }}
++          />
++        </label>
++        <button
++          type="button"
++          onClick={loadFromBrowser}
++          className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-sm transition hover:border-primary"
++        >
++          <HardDriveDownload className="size-4" />
++          Use episodes saved in this browser
++        </button>
++        {fileName && (
++          <span className="text-xs text-muted-foreground">{fileName}</span>
++        )}
++      </div>
++
++      <textarea
++        value={text}
++        onChange={(e) => {
++          setText(e.target.value);
++          setFileName(null);
++        }}
++        rows={5}
++        aria-label={`${label} links`}
++        placeholder={`…or paste ${label} links here\nhttps://player.example/embed/ep1\nhttps://player.example/embed/ep2\n<iframe src="https://player.example/embed/ep3"></iframe>`}
++        className="mt-3 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 font-mono text-xs outline-none transition focus:border-primary"
++      />
++
++      {text.trim() && (
++        <>
++          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl bg-surface p-3 text-xs">
++            <label className="flex items-center gap-2 text-muted-foreground">
++              Numbering
++              <select
++                value={modeChoice}
++                onChange={(e) =>
++                  setModeChoice(e.target.value as typeof modeChoice)
++                }
++                className={input}
++              >
++                <option value="auto">
++                  Automatic ({hasNumbers ? "numbers in file" : "in order"})
++                </option>
++                <option value="sequential">In order from a start number</option>
++                <option value="file" disabled={!hasNumbers}>
++                  Use numbers written in the file
++                </option>
++              </select>
++            </label>
++            {mode === "sequential" && (
++              <label className="flex items-center gap-2 text-muted-foreground">
++                First link is episode
++                <input
++                  type="number"
++                  min="1"
++                  step="1"
++                  value={start}
++                  onChange={(e) => setStart(e.target.value)}
++                  className={cn(
++                    input,
++                    "w-20",
++                    !startValid && "border-destructive",
++                  )}
++                />
++              </label>
++            )}
++            <label className="flex cursor-pointer items-center gap-2 text-muted-foreground">
++              <input
++                type="checkbox"
++                checked={replace}
++                onChange={(e) => setReplace(e.target.checked)}
++                className="size-4 accent-primary"
++              />
++              Replace existing {label} links ({replacing})
++            </label>
++          </div>
++
++          <p className="mt-3 text-xs text-muted-foreground">
++            Found <strong className="text-foreground">{links.length}</strong>{" "}
++            link
++            {links.length === 1 ? "" : "s"}
++            {rows.length > 0 &&
++              ` → episodes ${Math.min(...rows.map((r) => r.number))}–${Math.max(...rows.map((r) => r.number))}`}
++            . {toWrite.length} will be saved.
++            {skipped.length > 0 && ` ${skipped.length} line(s) ignored.`}
++          </p>
++
++          {rows.length > 0 && (
++            <div className="mt-2 max-h-96 overflow-auto rounded-xl border border-border">
++              <table className="w-full text-left text-xs">
++                <thead className="sticky top-0 bg-surface text-muted-foreground">
++                  <tr>
++                    <th className="px-3 py-2 font-medium">Episode</th>
++                    <th className="px-3 py-2 font-medium">Source</th>
++                    <th className="px-3 py-2 font-medium">Status</th>
++                    <th className="px-3 py-2 font-medium">{otherLabel}</th>
++                    <th className="px-3 py-2" />
++                  </tr>
++                </thead>
++                <tbody>
++                  {rows.map((r, i) => (
++                    <tr
++                      key={`${r.line}-${i}`}
++                      className={cn(
++                        "border-t border-border/60",
++                        preview === i && "bg-primary/10",
++                      )}
++                    >
++                      <td className="px-3 py-2 font-semibold tabular-nums">
++                        {r.number}
++                      </td>
++                      <td className="max-w-[18rem] px-3 py-2">
++                        <p className="truncate" title={r.url}>
++                          {r.embed.host} ·{" "}
++                          {r.embed.kind === "video" ? "Video file" : "Embed"}
++                        </p>
++                        <p className="text-[11px] text-muted-foreground">
++                          line {r.line}
++                          {r.repeatedUrl && (
++                            <span className="text-gold">
++                              {" "}
++                              · same link used twice
++                            </span>
++                          )}
++                        </p>
++                      </td>
++                      <td
++                        className={cn(
++                          "px-3 py-2",
++                          r.status === "duplicate" && "text-destructive",
++                          r.status === "replace" && "text-gold",
++                          (r.status === "keep" || r.status === "same") &&
++                            "text-muted-foreground",
++                          r.status === "new" && "text-primary",
++                        )}
++                      >
++                        {STATUS_TEXT[r.status]}
++                      </td>
++                      <td className="px-3 py-2 text-muted-foreground">
++                        {r.otherKept ? "Kept" : "—"}
++                      </td>
++                      <td className="px-3 py-2 text-right">
++                        <button
++                          type="button"
++                          onClick={() => setPreview(preview === i ? null : i)}
++                          aria-label={`Preview episode ${r.number}`}
++                          className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 hover:border-primary"
++                        >
++                          <Play className="size-3" />{" "}
++                          {preview === i ? "Close" : "Preview"}
++                        </button>
++                      </td>
++                    </tr>
++                  ))}
++                </tbody>
++              </table>
++            </div>
++          )}
++
++          {skipped.length > 0 && (
++            <details className="mt-2 text-xs text-muted-foreground">
++              <summary className="cursor-pointer">
++                Ignored lines ({skipped.length})
++              </summary>
++              <ul className="mt-1 space-y-0.5">
++                {skipped.slice(0, 50).map((s) => (
++                  <li key={`${s.line}-${s.text}`}>
++                    line {s.line}: {s.reason} —{" "}
++                    <span className="font-mono">{s.text}</span>
++                  </li>
++                ))}
++              </ul>
++            </details>
++          )}
++
++          {previewRow && (
++            <div className="mt-3">
++              <p className="mb-2 text-xs text-muted-foreground">
++                Preview · {label} episode {previewRow.number}
++              </p>
++              <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
++                <VideoPlayer
++                  key={previewRow.url}
++                  embed={previewRow.embed}
++                  title={`${anime.title} episode ${previewRow.number}`}
++                  autoPlay={false}
++                />
++              </div>
++            </div>
++          )}
++
++          {blocking && (
++            <p className="mt-3 text-xs text-destructive">
++              Two links point to the same episode number. Fix the numbers in the
++              file or switch numbering to “In order”.
++            </p>
++          )}
++
++          <div className="mt-4 flex justify-end">
++            <button
++              type="button"
++              onClick={save}
++              disabled={saving || blocking || !toWrite.length}
++              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
++            >
++              {saving ? (
++                <Loader2 className="size-4 animate-spin" />
++              ) : (
++                <Save className="size-4" />
++              )}
++              Save {toWrite.length} {label} link
++              {toWrite.length === 1 ? "" : "s"}
++            </button>
++          </div>
++        </>
++      )}
++    </section>
++  );
++}
+diff --git a/src/components/cloud-catalog-row.tsx b/src/components/cloud-catalog-row.tsx
+new file mode 100644
+index 0000000..0cf2617
+--- /dev/null
++++ b/src/components/cloud-catalog-row.tsx
+@@ -0,0 +1,46 @@
++import { useEffect, useState } from "react";
++
++import { AnimeRow } from "@/components/anime-row";
++import type { MediaCard } from "@/lib/anilist";
++import { watchCatalog, type CloudAnime } from "@/lib/cloud-episodes";
++import { firebaseConfigured } from "@/lib/firebase";
++
++function toCard(a: CloudAnime): MediaCard {
++  return {
++    id: a.anilistId,
++    title: { romaji: a.title, english: a.title, native: null },
++    coverImage: { extraLarge: a.poster, large: a.poster, color: null },
++    bannerImage: null,
++    format: null,
++    status: null,
++    episodes: a.episodeCount || null,
++    averageScore: null,
++    seasonYear: null,
++    genres: [],
++    description: null,
++    nextAiringEpisode: null,
++  };
++}
++
++/** Titles that have episodes in Firestore. Hidden until there is something to show. */
++export function CloudCatalogRow() {
++  const [anime, setAnime] = useState<CloudAnime[]>([]);
++
++  useEffect(() => {
++    if (!firebaseConfigured) return;
++    return watchCatalog(
++      (list) => setAnime(list.filter((a) => a.episodeCount > 0)),
++      (error) => console.error(error),
++      30,
++    );
++  }, []);
++
++  if (!anime.length) return null;
++  return (
++    <AnimeRow
++      eyebrow="Ready to stream"
++      title="Available to watch"
++      media={anime.map(toCard)}
++    />
++  );
++}
+diff --git a/src/hooks/use-cloud-episodes.ts b/src/hooks/use-cloud-episodes.ts
+new file mode 100644
+index 0000000..64ca0a8
+--- /dev/null
++++ b/src/hooks/use-cloud-episodes.ts
+@@ -0,0 +1,127 @@
++import { useEffect, useMemo, useState } from "react";
++
++import { useVideos, type SavedVideo } from "@/hooks/use-videos";
++import { watchEpisodeList, type CloudEpisode } from "@/lib/cloud-episodes";
++import { describeFirebaseError, firebaseConfigured } from "@/lib/firebase";
++
++export function cloudEpisodeId(number: number) {
++  return `ep-${number}`;
++}
++
++function toSaved(animeId: number, ep: CloudEpisode): SavedVideo {
++  return {
++    id: cloudEpisodeId(ep.number),
++    url: (ep.subUrl ?? ep.dubUrl)!,
++    title: ep.title || `Episode ${ep.number}`,
++    addedAt: 0,
++    animeId,
++    episode: ep.number,
++    thumbnail: ep.thumbnail,
++    subUrl: ep.subUrl,
++    dubUrl: ep.dubUrl,
++    cloud: true,
++  };
++}
++
++/** Live Firestore episodes for the given titles. */
++export function useCloudEpisodes(animeIds: number[]) {
++  const key = [
++    ...new Set(animeIds.filter((id) => Number.isSafeInteger(id) && id > 0)),
++  ]
++    .sort((a, b) => a - b)
++    .join(",");
++  const [byAnime, setByAnime] = useState<Map<number, SavedVideo[]>>(new Map());
++  const [loaded, setLoaded] = useState<Set<number>>(new Set());
++  const [errors, setErrors] = useState<Map<number, string>>(new Map());
++  const [attempt, setAttempt] = useState(0);
++
++  useEffect(() => {
++    if (!firebaseConfigured || !key) return;
++    const ids = key.split(",").map(Number);
++    setLoaded(new Set());
++    setErrors(new Map());
++    const stops = ids.map((id) =>
++      watchEpisodeList(
++        id,
++        (episodes, offline) => {
++          setByAnime((m) =>
++            new Map(m).set(
++              id,
++              episodes.map((e) => toSaved(id, e)),
++            ),
++          );
++          setLoaded((s) => new Set(s).add(id));
++          setErrors((m) => {
++            const next = new Map(m);
++            if (offline)
++              next.set(
++                id,
++                "Couldn't reach the episode database. Check your connection.",
++              );
++            else next.delete(id);
++            return next;
++          });
++        },
++        (error) => {
++          console.error(error);
++          setLoaded((s) => new Set(s).add(id));
++          setErrors((m) => new Map(m).set(id, describeFirebaseError(error)));
++        },
++      ),
++    );
++    return () => stops.forEach((stop) => stop());
++  }, [key, attempt]);
++
++  const ids = useMemo(() => (key ? key.split(",").map(Number) : []), [key]);
++  const current = useMemo(
++    () =>
++      new Map(
++        ids.flatMap((id) => {
++          const eps = byAnime.get(id);
++          return eps ? [[id, eps] as const] : [];
++        }),
++      ),
++    [ids, byAnime],
++  );
++  const ready = !firebaseConfigured || ids.every((id) => loaded.has(id));
++  const error = ids.map((id) => errors.get(id)).find(Boolean) ?? null;
++  return {
++    byAnime: current,
++    ready,
++    error,
++    retry: () => setAttempt((a) => a + 1),
++  };
++}
++
++/**
++ * Browser-saved episodes plus Firestore episodes for the given titles. When both
++ * have the same episode number, the Firestore one wins (it's what every visitor sees).
++ */
++export function useEpisodeLibrary(animeIds: number[]) {
++  const { videos: local, ready: localReady } = useVideos();
++  const cloud = useCloudEpisodes(animeIds);
++
++  const videos = useMemo(() => {
++    if (!cloud.byAnime.size) return local;
++    const taken = new Map<number, Set<number>>();
++    const cloudVideos: SavedVideo[] = [];
++    for (const [animeId, eps] of cloud.byAnime) {
++      taken.set(animeId, new Set(eps.map((e) => e.episode!)));
++      cloudVideos.push(...eps);
++    }
++    const kept = local.filter(
++      (v) =>
++        v.animeId === undefined ||
++        v.episode === undefined ||
++        !taken.get(v.animeId)?.has(v.episode),
++    );
++    return [...kept, ...cloudVideos];
++  }, [local, cloud.byAnime]);
++
++  return {
++    videos,
++    ready: localReady && cloud.ready,
++    error: cloud.error,
++    retry: cloud.retry,
++  };
++}
+diff --git a/src/hooks/use-prefs.ts b/src/hooks/use-prefs.ts
+index 94b515a..aaebcca 100644
+--- a/src/hooks/use-prefs.ts
++++ b/src/hooks/use-prefs.ts
+@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from "react";
+ const KEY = "tyshi-prefs-v1";
+ const EVENT = "tyshi-prefs-change";
+ 
+-type Prefs = { autoNext: boolean };
+-const DEFAULTS: Prefs = { autoNext: true };
++type Prefs = { autoNext: boolean; lang: "sub" | "dub" };
++const DEFAULTS: Prefs = { autoNext: true, lang: "sub" };
+ 
+ function read(): Prefs {
+   if (typeof window === "undefined") return DEFAULTS;
+@@ -16,7 +16,7 @@ function read(): Prefs {
+   }
+ }
+ 
+-/** Small viewer preferences (currently: auto-play the next episode). */
++/** Small viewer preferences: auto-play the next episode and SUB/DUB choice. */
+ export function usePrefs() {
+   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
+ 
+diff --git a/src/hooks/use-progress.ts b/src/hooks/use-progress.ts
+index 6fb13db..d04dd1d 100644
+--- a/src/hooks/use-progress.ts
++++ b/src/hooks/use-progress.ts
+@@ -1,6 +1,7 @@
+ import { useCallback, useEffect, useMemo, useState } from "react";
+ 
+-import { orderedEpisodes, useVideos, type SavedVideo } from "@/hooks/use-videos";
++import { useEpisodeLibrary } from "@/hooks/use-cloud-episodes";
++import { orderedEpisodes, type SavedVideo } from "@/hooks/use-videos";
+ 
+ /** One record per (anime, episode). Drives Continue Watching, History and resume. */
+ export type ProgressRecord = {
+@@ -232,7 +233,11 @@ export type ContinueItem = {
+ /** Most recent unfinished episode per anime, or the next episode if the last one was finished. */
+ export function useContinueWatching(limit = 20) {
+   const { records, ready: progressReady } = useProgress();
+-  const { videos, ready: videosReady } = useVideos();
++  const recentAnimeIds = useMemo(
++    () => [...new Set(records.map((r) => r.animeId))].slice(0, limit),
++    [records, limit],
++  );
++  const { videos, ready: videosReady } = useEpisodeLibrary(recentAnimeIds);
+ 
+   const items = useMemo(() => {
+     const out: ContinueItem[] = [];
+diff --git a/src/hooks/use-videos.ts b/src/hooks/use-videos.ts
+index 93f1cde..9048f28 100644
+--- a/src/hooks/use-videos.ts
++++ b/src/hooks/use-videos.ts
+@@ -14,6 +14,11 @@ export type SavedVideo = {
+   thumbnail?: string;
+   seriesName?: string;
+   seriesLogo?: string;
++  /** Firestore episodes only: separate SUB and DUB sources. `url` is the default one. */
++  subUrl?: string;
++  dubUrl?: string;
++  /** True for episodes loaded from Firestore (shared with every visitor). */
++  cloud?: boolean;
+ };
+ 
+ export type SavedVideoInput = Omit<SavedVideo, "id" | "addedAt">;
+diff --git a/src/lib/cloud-episodes.ts b/src/lib/cloud-episodes.ts
+new file mode 100644
+index 0000000..679cadf
+--- /dev/null
++++ b/src/lib/cloud-episodes.ts
+@@ -0,0 +1,353 @@
++import type { DocumentData } from "firebase/firestore";
++
++import { getDb } from "@/lib/firebase";
++
++/**
++ * Firestore layout
++ *
++ *   anime/{anilistId}         { anilistId, title, poster, episodeCount, subCount, dubCount, updatedAt }
++ *   episodeLists/{anilistId}  { anilistId, updatedAt, episodes: { "<number>": { title?, thumbnail?, subUrl?, dubUrl? } } }
++ *   admins/{uid}              any fields; existence = admin (created by hand in the Firebase console)
++ *
++ * All episodes of one title live in a single document so a viewer loads a whole
++ * series with one read. SUB and DUB are separate fields, so writing one never
++ * touches the other.
++ */
++
++export type Lang = "sub" | "dub";
++
++export type CloudEpisode = {
++  number: number;
++  title?: string;
++  thumbnail?: string;
++  subUrl?: string;
++  dubUrl?: string;
++};
++
++export type CloudAnime = {
++  anilistId: number;
++  title: string;
++  poster: string | null;
++  episodeCount: number;
++  subCount: number;
++  dubCount: number;
++};
++
++export type AnimeRef = {
++  anilistId: number;
++  title: string;
++  poster: string | null;
++};
++
++export const ANIME = "anime";
++export const EPISODE_LISTS = "episodeLists";
++export const ADMINS = "admins";
++
++/** Firestore documents max out at 1 MiB; leave headroom. */
++const MAX_DOC_BYTES = 900_000;
++const MAX_URL = 4000;
++
++export const langField = (lang: Lang) => (lang === "sub" ? "subUrl" : "dubUrl");
++export const langLabel = (lang: Lang) => (lang === "sub" ? "SUB" : "DUB");
++
++const str = (v: unknown) =>
++  typeof v === "string" && v.trim() ? v.trim() : undefined;
++
++export function parseEpisodeMap(
++  data: DocumentData | undefined,
++): CloudEpisode[] {
++  const map = data?.episodes;
++  if (!map || typeof map !== "object") return [];
++  const out: CloudEpisode[] = [];
++  for (const [key, raw] of Object.entries(map as Record<string, unknown>)) {
++    const number = Number(key);
++    if (
++      !Number.isSafeInteger(number) ||
++      number < 1 ||
++      !raw ||
++      typeof raw !== "object"
++    )
++      continue;
++    const r = raw as Record<string, unknown>;
++    const ep: CloudEpisode = {
++      number,
++      title: str(r.title),
++      thumbnail: str(r.thumbnail),
++      subUrl: str(r.subUrl),
++      dubUrl: str(r.dubUrl),
++    };
++    if (ep.subUrl || ep.dubUrl) out.push(ep);
++  }
++  return out.sort((a, b) => a.number - b.number);
++}
++
++export function parseAnime(
++  id: string,
++  data: DocumentData | undefined,
++): CloudAnime | null {
++  const anilistId = Number(data?.anilistId ?? id);
++  if (!data || !Number.isSafeInteger(anilistId)) return null;
++  const n = (v: unknown) => (typeof v === "number" && v >= 0 ? v : 0);
++  return {
++    anilistId,
++    title: str(data.title) ?? `Anime ${anilistId}`,
++    poster: str(data.poster) ?? null,
++    episodeCount: n(data.episodeCount),
++    subCount: n(data.subCount),
++    dubCount: n(data.dubCount),
++  };
++}
++
++type Unsubscribe = () => void;
++
++/** Live episode list for one title. Updates arrive without reloading the page. */
++export function watchEpisodeList(
++  anilistId: number,
++  onData: (episodes: CloudEpisode[], offline: boolean) => void,
++  onError: (error: unknown) => void,
++): Unsubscribe {
++  let cancelled = false;
++  let unsubscribe: Unsubscribe | undefined;
++  Promise.all([getDb(), import("firebase/firestore")])
++    .then(([db, fs]) => {
++      if (cancelled) return;
++      unsubscribe = fs.onSnapshot(
++        fs.doc(db, EPISODE_LISTS, String(anilistId)),
++        (snap) =>
++          onData(
++            parseEpisodeMap(snap.data()),
++            snap.metadata.fromCache && !snap.exists(),
++          ),
++        onError,
++      );
++    })
++    .catch((error) => {
++      if (!cancelled) onError(error);
++    });
++  return () => {
++    cancelled = true;
++    unsubscribe?.();
++  };
++}
++
++/** Live list of titles that have episodes in Firestore, newest first. */
++export function watchCatalog(
++  onData: (anime: CloudAnime[]) => void,
++  onError: (error: unknown) => void,
++  max = 60,
++): Unsubscribe {
++  let cancelled = false;
++  let unsubscribe: Unsubscribe | undefined;
++  Promise.all([getDb(), import("firebase/firestore")])
++    .then(([db, fs]) => {
++      if (cancelled) return;
++      unsubscribe = fs.onSnapshot(
++        fs.query(
++          fs.collection(db, ANIME),
++          fs.orderBy("updatedAt", "desc"),
++          fs.limit(max),
++        ),
++        (snap) =>
++          onData(
++            snap.docs
++              .map((d) => parseAnime(d.id, d.data()))
++              .filter((a): a is CloudAnime => a !== null),
++          ),
++        onError,
++      );
++    })
++    .catch((error) => {
++      if (!cancelled) onError(error);
++    });
++  return () => {
++    cancelled = true;
++    unsubscribe?.();
++  };
++}
++
++export async function checkIsAdmin(uid: string): Promise<boolean> {
++  const [db, fs] = await Promise.all([getDb(), import("firebase/firestore")]);
++  const snap = await fs.getDoc(fs.doc(db, ADMINS, uid));
++  return snap.exists();
++}
++
++type EpisodeFields = Omit<CloudEpisode, "number">;
++type Mutator = (episodes: Map<number, EpisodeFields>) => void;
++
++/**
++ * Read-modify-write inside a transaction so two admins (or a SUB and a DUB import
++ * running back to back) never lose each other's changes. Only the episode keys the
++ * mutator touched are written; other episodes and fields are left as they are.
++ */
++async function mutateEpisodes(anime: AnimeRef, mutate: Mutator) {
++  const [db, fs] = await Promise.all([getDb(), import("firebase/firestore")]);
++  const id = String(anime.anilistId);
++  const listRef = fs.doc(db, EPISODE_LISTS, id);
++  const animeRef = fs.doc(db, ANIME, id);
++
++  await fs.runTransaction(db, async (tx) => {
++    const snap = await tx.get(listRef);
++    const before = new Map(
++      parseEpisodeMap(snap.data()).map(({ number, ...rest }) => [number, rest]),
++    );
++    const after = new Map([...before].map(([k, v]) => [k, { ...v }]));
++    mutate(after);
++
++    const patch: Record<string, unknown> = {};
++    const keys = new Set([...before.keys(), ...after.keys()]);
++    for (const key of keys) {
++      const prev = before.get(key);
++      const next = after.get(key);
++      if (!next || (!next.subUrl && !next.dubUrl)) {
++        if (prev) patch[String(key)] = fs.deleteField();
++        continue;
++      }
++      const fields: Record<string, unknown> = {};
++      let changed = !prev;
++      for (const f of ["title", "thumbnail", "subUrl", "dubUrl"] as const) {
++        const value = next[f]?.trim() || undefined;
++        if (value === prev?.[f]) {
++          if (value !== undefined) fields[f] = value;
++          continue;
++        }
++        changed = true;
++        fields[f] = value ?? fs.deleteField();
++      }
++      if (changed) patch[String(key)] = fields;
++    }
++    if (!Object.keys(patch).length) return;
++
++    const remaining = [...after.entries()].filter(
++      ([, v]) => v.subUrl || v.dubUrl,
++    );
++    const bytes = JSON.stringify(Object.fromEntries(remaining)).length;
++    if (bytes > MAX_DOC_BYTES)
++      throw new Error(
++        "This title has too many links for one Firestore document (about 1 MB). Split it into seasons.",
++      );
++
++    tx.set(
++      listRef,
++      {
++        anilistId: anime.anilistId,
++        episodes: patch,
++        updatedAt: fs.serverTimestamp(),
++      },
++      { merge: true },
++    );
++    tx.set(
++      animeRef,
++      {
++        anilistId: anime.anilistId,
++        title: anime.title.trim().slice(0, 300) || `Anime ${anime.anilistId}`,
++        poster: anime.poster?.trim() || null,
++        episodeCount: remaining.length,
++        subCount: remaining.filter(([, v]) => v.subUrl).length,
++        dubCount: remaining.filter(([, v]) => v.dubUrl).length,
++        updatedAt: fs.serverTimestamp(),
++      },
++      { merge: true },
++    );
++  });
++}
++
++export type ImportResult = { added: number; replaced: number; skipped: number };
++
++/**
++ * Writes SUB *or* DUB links only. The other language on the same episode is never
++ * changed. Existing links of the same language are kept unless `replaceExisting`.
++ */
++export async function importLinks(
++  anime: AnimeRef,
++  lang: Lang,
++  entries: { number: number; url: string }[],
++  replaceExisting: boolean,
++): Promise<ImportResult> {
++  const field = langField(lang);
++  const result: ImportResult = { added: 0, replaced: 0, skipped: 0 };
++  await mutateEpisodes(anime, (episodes) => {
++    result.added = result.replaced = result.skipped = 0;
++    for (const { number, url } of entries) {
++      if (
++        !Number.isSafeInteger(number) ||
++        number < 1 ||
++        !url ||
++        url.length > MAX_URL
++      )
++        continue;
++      const current = episodes.get(number) ?? {};
++      if (current[field] === url) {
++        result.skipped++;
++        continue;
++      }
++      if (current[field] && !replaceExisting) {
++        result.skipped++;
++        continue;
++      }
++      if (current[field]) result.replaced++;
++      else result.added++;
++      episodes.set(number, { ...current, [field]: url });
++    }
++  });
++  return result;
++}
++
++/** Create or edit one episode. Empty strings clear a field. */
++export async function saveEpisode(
++  anime: AnimeRef,
++  episode: CloudEpisode,
++  previousNumber?: number,
++): Promise<void> {
++  if (!episode.subUrl && !episode.dubUrl)
++    throw new Error("Add a SUB or DUB link.");
++  await mutateEpisodes(anime, (episodes) => {
++    const moving =
++      previousNumber !== undefined && previousNumber !== episode.number;
++    if (moving && episodes.has(episode.number))
++      throw new Error(`Episode ${episode.number} already exists.`);
++    if (moving) episodes.delete(previousNumber);
++    const { number, ...fields } = episode;
++    episodes.set(number, fields);
++  });
++}
++
++/** Remove one language from an episode, or the whole episode when `lang` is omitted. */
++export async function deleteEpisode(
++  anime: AnimeRef,
++  number: number,
++  lang?: Lang,
++) {
++  await deleteEpisodes(anime, [number], lang);
++}
++
++/** Delete several episodes, or only one language from each, in a single write. */
++export async function deleteEpisodes(
++  anime: AnimeRef,
++  numbers: number[],
++  lang?: Lang,
++) {
++  if (numbers.length === 0) return;
++  await mutateEpisodes(anime, (episodes) => {
++    for (const number of numbers) {
++      const current = episodes.get(number);
++      if (!current) continue;
++      if (!lang) episodes.delete(number);
++      else episodes.set(number, { ...current, [langField(lang)]: undefined });
++    }
++  });
++}
++
++/** Update the title/poster stored for a title in the `anime` collection. */
++export async function saveAnimeDetails(anime: AnimeRef) {
++  const [db, fs] = await Promise.all([getDb(), import("firebase/firestore")]);
++  await fs.setDoc(
++    fs.doc(db, ANIME, String(anime.anilistId)),
++    {
++      anilistId: anime.anilistId,
++      title: anime.title.trim().slice(0, 300) || `Anime ${anime.anilistId}`,
++      poster: anime.poster?.trim() || null,
++      updatedAt: fs.serverTimestamp(),
++    },
++    { merge: true },
++  );
++}
+diff --git a/src/lib/firebase.ts b/src/lib/firebase.ts
+new file mode 100644
+index 0000000..2762864
+--- /dev/null
++++ b/src/lib/firebase.ts
+@@ -0,0 +1,112 @@
++import type { FirebaseApp } from "firebase/app";
++import type { Auth } from "firebase/auth";
++import type { Firestore } from "firebase/firestore";
++
++/**
++ * Public Firebase web config. These values identify the project; they are not
++ * secrets. Access is controlled by Firebase Authentication + Firestore rules.
++ */
++const config = {
++  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
++  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
++  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
++  appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined,
++  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as
++    string | undefined,
++  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as
++    string | undefined,
++};
++
++/** Local development only: talk to the Firebase emulators instead of the real project. */
++const useEmulator = import.meta.env.VITE_FIREBASE_USE_EMULATOR === "true";
++
++export const firebaseConfigured = Boolean(
++  config.apiKey && config.authDomain && config.projectId && config.appId,
++);
++
++export class FirebaseUnavailableError extends Error {
++  constructor(message = "Firebase isn't configured for this site yet.") {
++    super(message);
++    this.name = "FirebaseUnavailableError";
++  }
++}
++
++let appPromise: Promise<FirebaseApp> | undefined;
++let dbPromise: Promise<Firestore> | undefined;
++let authPromise: Promise<Auth> | undefined;
++
++/** Firebase is only started in the browser, and only loaded when a page needs it. */
++function getApp(): Promise<FirebaseApp> {
++  if (typeof window === "undefined")
++    return Promise.reject(
++      new FirebaseUnavailableError("Firebase runs in the browser only."),
++    );
++  if (!firebaseConfigured)
++    return Promise.reject(new FirebaseUnavailableError());
++  appPromise ??= import("firebase/app").then(({ initializeApp, getApps }) => {
++    const existing = getApps()[0];
++    return existing ?? initializeApp(config);
++  });
++  return appPromise;
++}
++
++export function getDb(): Promise<Firestore> {
++  dbPromise ??= getApp().then(async (app) => {
++    const { getFirestore, connectFirestoreEmulator } =
++      await import("firebase/firestore");
++    const db = getFirestore(app);
++    if (useEmulator) connectFirestoreEmulator(db, "127.0.0.1", 8080);
++    return db;
++  });
++  dbPromise.catch(() => {
++    dbPromise = undefined;
++  });
++  return dbPromise;
++}
++
++export function getAuthClient(): Promise<Auth> {
++  authPromise ??= getApp().then(async (app) => {
++    const { getAuth, connectAuthEmulator } = await import("firebase/auth");
++    const auth = getAuth(app);
++    if (useEmulator)
++      connectAuthEmulator(auth, "http://127.0.0.1:9099", {
++        disableWarnings: true,
++      });
++    return auth;
++  });
++  authPromise.catch(() => {
++    authPromise = undefined;
++  });
++  return authPromise;
++}
++
++/** Turns Firebase error codes into short, readable messages. */
++export function describeFirebaseError(error: unknown): string {
++  if (error instanceof FirebaseUnavailableError) return error.message;
++  const code =
++    error && typeof error === "object" && "code" in error
++      ? String(error.code)
++      : "";
++  switch (code) {
++    case "permission-denied":
++      return "Permission denied. Only accounts listed in the Firestore “admins” collection can make changes.";
++    case "unavailable":
++      return "Couldn't reach the database. Check your internet connection and try again.";
++    case "resource-exhausted":
++      return "The Firebase daily quota has been reached. Try again later.";
++    case "auth/invalid-credential":
++    case "auth/wrong-password":
++    case "auth/user-not-found":
++    case "auth/invalid-email":
++      return "Email or password is incorrect.";
++    case "auth/too-many-requests":
++      return "Too many attempts. Wait a few minutes and try again.";
++    case "auth/network-request-failed":
++      return "Network error. Check your connection and try again.";
++    case "auth/operation-not-allowed":
++      return "Email/password sign-in isn't enabled in Firebase Authentication.";
++  }
++  return error instanceof Error && error.message
++    ? error.message
++    : "Something went wrong.";
++}
+diff --git a/src/lib/link-import.ts b/src/lib/link-import.ts
+new file mode 100644
+index 0000000..930d992
+--- /dev/null
++++ b/src/lib/link-import.ts
+@@ -0,0 +1,123 @@
++import { toEmbed, type Embed } from "@/lib/video-embed";
++
++export type ExtractedLink = {
++  /** 1-based line in the source text where the link starts. */
++  line: number;
++  /** The text that was matched (URL or embed code). */
++  raw: string;
++  /** Normalised playable URL (what gets saved). */
++  url: string;
++  embed: Embed;
++  /** Episode number written before the link on its line ("Ep 5 | …"), if any. */
++  explicitEpisode: number | null;
++};
++
++export type SkippedLine = { line: number; text: string; reason: string };
++
++const TOKEN =
++  /<iframe\b[^>]*?\bsrc\s*=\s*["']([^"']+)["'][^>]*>(?:\s*<\/iframe>)?|<(?:video|source)\b[^>]*?\bsrc\s*=\s*["']([^"']+)["'][^>]*>|((?:https?:)?\/\/[^\s"'<>|]+)/gi;
++
++const EPISODE_PREFIX = /^\s*(?:episode|ep|e)?\s*[.#:]?\s*0*(\d{1,5})(?![\w])/i;
++
++/**
++ * Pulls every link out of a pasted list / TXT file, in the order they appear.
++ * Accepts plain URLs, <iframe> embed codes (also spread over several lines),
++ * <video>/<source> tags and lines like "Episode 5 | https://…".
++ */
++export function extractLinks(text: string): {
++  links: ExtractedLink[];
++  skipped: SkippedLine[];
++} {
++  const links: ExtractedLink[] = [];
++  const skipped: SkippedLine[] = [];
++  const lineStarts = [0];
++  for (let i = 0; i < text.length; i++)
++    if (text[i] === "\n") lineStarts.push(i + 1);
++  const lineOf = (index: number) => {
++    let lo = 0;
++    let hi = lineStarts.length - 1;
++    while (lo < hi) {
++      const mid = (lo + hi + 1) >> 1;
++      if (lineStarts[mid] <= index) lo = mid;
++      else hi = mid - 1;
++    }
++    return lo;
++  };
++
++  const linesWithLinks = new Set<number>();
++  let previousEnd = 0;
++  for (const match of text.matchAll(TOKEN)) {
++    const index = match.index ?? 0;
++    const lineIndex = lineOf(index);
++    let raw = match[0];
++    if (match[3]) raw = raw.replace(/[),.;\]]+$/, "");
++    const end = index + match[0].length;
++    for (let l = lineIndex; l <= lineOf(Math.max(index, end - 1)); l++)
++      linesWithLinks.add(l);
++
++    const prefixStart = Math.max(lineStarts[lineIndex], previousEnd);
++    const prefix = text.slice(prefixStart, index);
++    previousEnd = end;
++
++    const embed = toEmbed(raw);
++    if (!embed) {
++      skipped.push({
++        line: lineIndex + 1,
++        text: raw.slice(0, 160),
++        reason: "Not a valid link",
++      });
++      continue;
++    }
++    const n = prefix.match(EPISODE_PREFIX);
++    const explicit = n ? Number(n[1]) : null;
++    links.push({
++      line: lineIndex + 1,
++      raw,
++      url: embed.src,
++      embed,
++      explicitEpisode: explicit && explicit > 0 ? explicit : null,
++    });
++  }
++
++  text.split("\n").forEach((line, i) => {
++    const t = line.trim();
++    if (!t || linesWithLinks.has(i) || /^(#|\/\/|<\/iframe>)/i.test(t)) return;
++    skipped.push({
++      line: i + 1,
++      text: t.slice(0, 160),
++      reason: "No link found",
++    });
++  });
++  skipped.sort((a, b) => a.line - b.line);
++  return { links, skipped };
++}
++
++export type NumberingMode = "sequential" | "file";
++
++/** True when every link has its own, unique episode number written in the file. */
++export function fileHasEpisodeNumbers(links: ExtractedLink[]): boolean {
++  if (!links.length) return false;
++  const seen = new Set<number>();
++  for (const l of links) {
++    if (l.explicitEpisode === null || seen.has(l.explicitEpisode)) return false;
++    seen.add(l.explicitEpisode);
++  }
++  return true;
++}
++
++export type MappedLink = ExtractedLink & { number: number };
++
++/** Assigns episode numbers: in file order from `start`, or from the numbers in the file. */
++export function mapLinksToEpisodes(
++  links: ExtractedLink[],
++  mode: NumberingMode,
++  start: number,
++): MappedLink[] {
++  return links.map((link, i) => ({
++    ...link,
++    number:
++      mode === "file" && link.explicitEpisode !== null
++        ? link.explicitEpisode
++        : start + i,
++  }));
++}
+diff --git a/src/routeTree.gen.ts b/src/routeTree.gen.ts
+index c461a69..123d5c8 100644
+--- a/src/routeTree.gen.ts
++++ b/src/routeTree.gen.ts
+@@ -10,6 +10,7 @@
+ 
+ import { Route as rootRouteImport } from './routes/__root'
+ import { Route as IndexRouteImport } from './routes/index'
++import { Route as AdminRouteImport } from './routes/admin'
+ import { Route as BrowseRouteImport } from './routes/browse'
+ import { Route as HistoryRouteImport } from './routes/history'
+ import { Route as SearchRouteImport } from './routes/search'
+@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
+   path: '/',
+   getParentRoute: () => rootRouteImport,
+ } as any)
++const AdminRoute = AdminRouteImport.update({
++  id: '/admin',
++  path: '/admin',
++  getParentRoute: () => rootRouteImport,
++} as any)
+ const BrowseRoute = BrowseRouteImport.update({
+   id: '/browse',
+   path: '/browse',
+@@ -67,6 +73,7 @@ const AnimeIdWatchRoute = AnimeIdWatchRouteImport.update({
+ 
+ export interface FileRoutesByFullPath {
+   '/': typeof IndexRoute
++  '/admin': typeof AdminRoute
+   '/browse': typeof BrowseRoute
+   '/history': typeof HistoryRoute
+   '/search': typeof SearchRoute
+@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
+ }
+ export interface FileRoutesByTo {
+   '/': typeof IndexRoute
++  '/admin': typeof AdminRoute
+   '/browse': typeof BrowseRoute
+   '/history': typeof HistoryRoute
+   '/search': typeof SearchRoute
+@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
+ export interface FileRoutesById {
+   __root__: typeof rootRouteImport
+   '/': typeof IndexRoute
++  '/admin': typeof AdminRoute
+   '/browse': typeof BrowseRoute
+   '/history': typeof HistoryRoute
+   '/search': typeof SearchRoute
+@@ -103,6 +112,7 @@ export interface FileRouteTypes {
+   fileRoutesByFullPath: FileRoutesByFullPath
+   fullPaths:
+     | '/'
++    | '/admin'
+     | '/browse'
+     | '/history'
+     | '/search'
+@@ -114,6 +124,7 @@ export interface FileRouteTypes {
+   fileRoutesByTo: FileRoutesByTo
+   to:
+     | '/'
++    | '/admin'
+     | '/browse'
+     | '/history'
+     | '/search'
+@@ -125,6 +136,7 @@ export interface FileRouteTypes {
+   id:
+     | '__root__'
+     | '/'
++    | '/admin'
+     | '/browse'
+     | '/history'
+     | '/search'
+@@ -137,6 +149,7 @@ export interface FileRouteTypes {
+ }
+ export interface RootRouteChildren {
+   IndexRoute: typeof IndexRoute
++  AdminRoute: typeof AdminRoute
+   BrowseRoute: typeof BrowseRoute
+   HistoryRoute: typeof HistoryRoute
+   SearchRoute: typeof SearchRoute
+@@ -156,6 +169,13 @@ declare module '@tanstack/react-router' {
+       preLoaderRoute: typeof IndexRouteImport
+       parentRoute: typeof rootRouteImport
+     }
++    '/admin': {
++      id: '/admin'
++      path: '/admin'
++      fullPath: '/admin'
++      preLoaderRoute: typeof AdminRouteImport
++      parentRoute: typeof rootRouteImport
++    }
+     '/browse': {
+       id: '/browse'
+       path: '/browse'
+@@ -217,6 +237,7 @@ declare module '@tanstack/react-router' {
+ 
+ const rootRouteChildren: RootRouteChildren = {
+   IndexRoute: IndexRoute,
++  AdminRoute: AdminRoute,
+   BrowseRoute: BrowseRoute,
+   HistoryRoute: HistoryRoute,
+   SearchRoute: SearchRoute,
+diff --git a/src/routes/admin.tsx b/src/routes/admin.tsx
+new file mode 100644
+index 0000000..e0f756d
+--- /dev/null
++++ b/src/routes/admin.tsx
+@@ -0,0 +1,123 @@
++import { useEffect, useState } from "react";
++import { createFileRoute, Link } from "@tanstack/react-router";
++import { ExternalLink, Loader2 } from "lucide-react";
++
++import { SiteShell } from "@/components/site-shell";
++import { AdminGate } from "@/components/admin/admin-gate";
++import { AnimePicker } from "@/components/admin/anime-picker";
++import {
++  AnimeDetailsForm,
++  EpisodeTable,
++} from "@/components/admin/episode-table";
++import { LinkImporter } from "@/components/admin/link-importer";
++import {
++  watchEpisodeList,
++  type AnimeRef,
++  type CloudEpisode,
++} from "@/lib/cloud-episodes";
++import { describeFirebaseError } from "@/lib/firebase";
++
++export const Route = createFileRoute("/admin")({
++  head: () => ({
++    meta: [
++      { title: "Admin | TYSHI ZONE" },
++      { name: "robots", content: "noindex, nofollow" },
++    ],
++  }),
++  component: AdminPage,
++});
++
++function AdminPage() {
++  return (
++    <SiteShell>
++      <div className="mx-auto max-w-[1100px] px-4 py-6 md:px-8">
++        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Admin</h1>
++        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
++          Add anime and SUB/DUB episode links to Firestore. Changes go live for
++          every visitor immediately — no redeploy needed.
++        </p>
++        <div className="mt-6">
++          <AdminGate>{() => <Dashboard />}</AdminGate>
++        </div>
++      </div>
++    </SiteShell>
++  );
++}
++
++function Dashboard() {
++  const [anime, setAnime] = useState<AnimeRef | null>(null);
++  const [episodes, setEpisodes] = useState<CloudEpisode[] | null>(null);
++  const [error, setError] = useState<string | null>(null);
++
++  useEffect(() => {
++    if (!anime) return;
++    setEpisodes(null);
++    setError(null);
++    return watchEpisodeList(
++      anime.anilistId,
++      (eps) => {
++        setEpisodes(eps);
++        setError(null);
++      },
++      (err) => setError(describeFirebaseError(err)),
++    );
++  }, [anime?.anilistId]); // eslint-disable-line react-hooks/exhaustive-deps
++
++  return (
++    <div className="space-y-6">
++      <AnimePicker value={anime} onChange={setAnime} />
++
++      {anime && (
++        <>
++          <div className="flex flex-wrap items-center justify-between gap-3">
++            <h2 className="text-lg font-semibold tracking-tight">
++              2. {anime.title}
++            </h2>
++            <Link
++              to="/anime/$id/watch"
++              params={{ id: String(anime.anilistId) }}
++              target="_blank"
++              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary"
++            >
++              Open watch page <ExternalLink className="size-3.5" />
++            </Link>
++          </div>
++
++          <AnimeDetailsForm
++            key={anime.anilistId}
++            anime={anime}
++            onSaved={setAnime}
++          />
++
++          {error ? (
++            <p className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
++              {error}
++            </p>
++          ) : episodes === null ? (
++            <p className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
++              <Loader2 className="size-4 animate-spin" /> Loading episodes…
++            </p>
++          ) : (
++            <>
++              <div className="grid gap-6 lg:grid-cols-2">
++                <LinkImporter
++                  key={`sub-${anime.anilistId}`}
++                  anime={anime}
++                  lang="sub"
++                  existing={episodes}
++                />
++                <LinkImporter
++                  key={`dub-${anime.anilistId}`}
++                  anime={anime}
++                  lang="dub"
++                  existing={episodes}
++                />
++              </div>
++              <EpisodeTable anime={anime} episodes={episodes} />
++            </>
++          )}
++        </>
++      )}
++    </div>
++  );
++}
+diff --git a/src/routes/anime.$id.index.tsx b/src/routes/anime.$id.index.tsx
+index fbf3402..f5697ad 100644
+--- a/src/routes/anime.$id.index.tsx
++++ b/src/routes/anime.$id.index.tsx
+@@ -16,7 +16,8 @@ import {
+ } from "@/lib/anilist";
+ import { useWatchlist } from "@/hooks/use-watchlist";
+ import { resumePosition, useProgress } from "@/hooks/use-progress";
+-import { orderedEpisodes, useVideos } from "@/hooks/use-videos";
++import { useEpisodeLibrary } from "@/hooks/use-cloud-episodes";
++import { orderedEpisodes } from "@/hooks/use-videos";
+ import { formatClock } from "@/lib/format";
+ 
+ import { cn } from "@/lib/utils";
+@@ -66,15 +67,19 @@ function AnimeDetailPage() {
+   const { data: media } = useSuspenseQuery(mediaQuery(Number(id)));
+   const { has, toggle } = useWatchlist();
+   const saved = has(media.id);
+-  const { videos } = useVideos();
++  const { videos, ready: episodesReady, error: episodesError } = useEpisodeLibrary([media.id]);
+   const { records } = useProgress();
+   const episodes = orderedEpisodes(videos, media.id);
+   const last = records.find(
+     (r) => r.animeId === media.id && episodes.some((e) => e.id === r.episodeId),
+   );
+   const resumeAt = resumePosition(last);
+-  const watchCaption = !episodes.length
+-    ? "No episodes have been added yet"
++  const watchCaption = !episodesReady
++    ? "Loading episodes…"
++    : !episodes.length
++      ? episodesError
++        ? "Episodes couldn't be loaded right now"
++        : "No episodes have been added yet"
+     : last && !last.completed
+       ? `Continue Episode ${last.episode ?? ""}`.trim() +
+         (resumeAt > 0 ? ` at ${formatClock(resumeAt)}` : "")
+diff --git a/src/routes/anime.$id.watch.tsx b/src/routes/anime.$id.watch.tsx
+index e48b12d..36e74ea 100644
+--- a/src/routes/anime.$id.watch.tsx
++++ b/src/routes/anime.$id.watch.tsx
+@@ -25,7 +25,8 @@ import {
+ import { Switch } from "@/components/ui/switch";
+ import { markCompleted, pickDefaultEpisode, readProgress, useProgress } from "@/hooks/use-progress";
+ import { usePrefs } from "@/hooks/use-prefs";
+-import { orderedEpisodes, useVideos, type SavedVideo } from "@/hooks/use-videos";
++import { useEpisodeLibrary } from "@/hooks/use-cloud-episodes";
++import { orderedEpisodes, type SavedVideo } from "@/hooks/use-videos";
+ import { mediaQuery } from "@/lib/queries";
+ import { stripHtml, titleOf } from "@/lib/anilist";
+ import { episodeNumberLabel, isDefaultEpisodeTitle } from "@/lib/format";
+@@ -69,7 +70,8 @@ function WatchAnimePage() {
+   const navigate = useNavigate();
+ 
+   const { data: media } = useSuspenseQuery(mediaQuery(animeId));
+-  const { videos, ready } = useVideos();
++  const animeIds = useMemo(() => [animeId], [animeId]);
++  const { videos, ready, error: episodesError, retry } = useEpisodeLibrary(animeIds);
+   const { records } = useProgress();
+   const { prefs, set: setPrefs } = usePrefs();
+ 
+@@ -90,6 +92,21 @@ function WatchAnimePage() {
+     );
+   }, [eps, ep]);
+ 
++  // SUB/DUB: Firestore episodes can carry both. Fall back to whichever exists.
++  const hasSub = Boolean(current?.subUrl);
++  const hasDub = Boolean(current?.dubUrl);
++  const lang: "sub" | "dub" | null =
++    current?.cloud && (hasSub || hasDub)
++      ? (prefs.lang === "dub" ? hasDub : !hasSub)
++        ? "dub"
++        : "sub"
++      : null;
++  const playing: SavedVideo | undefined = useMemo(() => {
++    if (!current || !lang) return current;
++    const url = lang === "dub" ? current.dubUrl : current.subUrl;
++    return url ? { ...current, url } : current;
++  }, [current, lang]);
++
+   const idx = current ? eps.findIndex((e) => e.id === current.id) : -1;
+   const prev = idx > 0 ? eps[idx - 1] : null;
+   const next = idx >= 0 && idx < eps.length - 1 ? eps[idx + 1] : null;
+@@ -190,11 +207,22 @@ function WatchAnimePage() {
+     return shell(
+       <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-24 text-center">
+         <Film className="size-12 text-muted-foreground" />
+-        <h1 className="text-xl font-semibold">No episodes available yet</h1>
++        <h1 className="text-xl font-semibold">
++          {episodesError ? "Episodes couldn't be loaded" : "No episodes available yet"}
++        </h1>
+         <p className="text-sm text-muted-foreground">
+-          {anime.title} doesn't have any episodes to watch right now.
++          {episodesError ?? `${anime.title} doesn't have any episodes to watch right now.`}
+         </p>
+         <div className="flex flex-wrap justify-center gap-2">
++          {episodesError && (
++            <button
++              type="button"
++              onClick={retry}
++              className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
++            >
++              Try again
++            </button>
++          )}
+           <Link
+             to="/anime/$id"
+             params={{ id }}
+@@ -214,7 +242,7 @@ function WatchAnimePage() {
+     );
+   }
+ 
+-  if (!current) return <WatchSkeleton />;
++  if (!current || !playing) return <WatchSkeleton />;
+ 
+   const customTitle = !isDefaultEpisodeTitle(current.title, current.episode);
+   const heading =
+@@ -257,11 +285,23 @@ function WatchAnimePage() {
+         </div>
+       </div>
+ 
++      {episodesError && (
++        <div
++          role="status"
++          className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-xs text-gold"
++        >
++          <span>{episodesError} Some episodes may be missing.</span>
++          <button type="button" onClick={retry} className="font-semibold underline">
++            Retry
++          </button>
++        </div>
++      )}
++
+       {/* Player */}
+       <EpisodePlayer
+-        key={`${current.id}:${nonce}`}
++        key={`${current.id}:${lang ?? "default"}:${nonce}`}
+         anime={anime}
+-        episode={current}
++        episode={playing}
+         next={next}
+         autoNext={prefs.autoNext}
+         onNext={handleNext}
+@@ -316,7 +356,37 @@ function WatchAnimePage() {
+           </button>
+         </div>
+ 
+-        <div className="flex items-center justify-between gap-3 sm:justify-end">
++        <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
++          {lang && (
++            <div
++              role="radiogroup"
++              aria-label="Audio version"
++              className="inline-flex h-11 items-center rounded-full border border-border bg-surface p-1"
++            >
++              {(["sub", "dub"] as const).map((option) => {
++                const available = option === "sub" ? hasSub : hasDub;
++                const active = lang === option;
++                return (
++                  <button
++                    key={option}
++                    type="button"
++                    role="radio"
++                    aria-checked={active}
++                    disabled={!available}
++                    title={available ? undefined : `${option.toUpperCase()} isn't available for this episode`}
++                    onClick={() => setPrefs({ lang: option })}
++                    className={
++                      active
++                        ? "h-9 rounded-full bg-primary px-4 text-xs font-semibold text-primary-foreground"
++                        : "h-9 rounded-full px-4 text-xs font-semibold text-muted-foreground transition hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
++                    }
++                  >
++                    {option.toUpperCase()}
++                  </button>
++                );
++              })}
++            </div>
++          )}
+           <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+             <Switch checked={prefs.autoNext} onCheckedChange={(v) => setPrefs({ autoNext: v })} />
+             Auto-play next
+@@ -344,6 +414,13 @@ function WatchAnimePage() {
+         </div>
+       </div>
+ 
++      {lang && prefs.lang !== lang && (
++        <p className="mt-2 text-xs text-muted-foreground">
++          {prefs.lang.toUpperCase()} isn't available for this episode yet — playing{" "}
++          {lang.toUpperCase()}.
++        </p>
++      )}
++
+       {/* Episode list */}
+       <section className="mt-10" aria-labelledby="episodes-heading">
+         <div className="flex flex-wrap items-center gap-2">
+diff --git a/src/routes/index.tsx b/src/routes/index.tsx
+index e35024c..8cc18f1 100644
+--- a/src/routes/index.tsx
++++ b/src/routes/index.tsx
+@@ -4,6 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
+ import { SiteShell } from "@/components/site-shell";
+ import { Hero } from "@/components/hero";
+ import { AnimeRow } from "@/components/anime-row";
++import { CloudCatalogRow } from "@/components/cloud-catalog-row";
+ import { ContinueWatchingRow } from "@/components/continue-watching";
+ import { currentSeason, nextSeason, prettyLabel } from "@/lib/anilist";
+ import {
+@@ -58,6 +59,7 @@ function HomePage() {
+ 
+       <div className="mx-auto max-w-[1600px]">
+         <ContinueWatchingRow />
++        <CloudCatalogRow />
+         <AnimeRow eyebrow="Right now" title="Trending" media={trending.data.media} />
+         <AnimeRow
+           eyebrow={`${prettyLabel(now.season)} ${now.year}`}
